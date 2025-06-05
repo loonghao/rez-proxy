@@ -47,10 +47,13 @@ async def resolve_environment(request: EnvironmentResolveRequest):
         # Create resolved context
         context = ResolvedContext(request.packages)
 
-        if context.status != context.Status.solved:
+        # Check if resolution was successful
+        from rez.resolver import ResolverStatus
+        if context.status != ResolverStatus.solved:
+            failure_desc = getattr(context, 'failure_description', 'Unknown resolution failure')
             raise HTTPException(
                 status_code=400,
-                detail=f"Failed to resolve environment: {context.failure_description}"
+                detail=f"Failed to resolve environment: {failure_desc}"
             )
 
         # Generate environment ID
@@ -60,13 +63,14 @@ async def resolve_environment(request: EnvironmentResolveRequest):
         packages = [_package_to_info(pkg) for pkg in context.resolved_packages]
 
         # Store environment info
+        from rez.system import system
         env_info = {
             "context": context,
             "packages": packages,
             "created_at": datetime.utcnow().isoformat(),
-            "platform": str(context.platform),
-            "arch": str(context.arch),
-            "os_name": str(context.os),
+            "platform": str(getattr(context, 'platform', system.platform)),
+            "arch": str(getattr(context, 'arch', system.arch)),
+            "os_name": str(getattr(context, 'os', system.os)),
         }
         _environments[env_id] = env_info
 
