@@ -7,7 +7,7 @@ Handles client context, platform information, and service mode detection.
 import uuid
 from contextvars import ContextVar
 
-from ..models.schemas import ClientContext, PlatformInfo, ServiceMode
+from rez_proxy.models.schemas import ClientContext, PlatformInfo, ServiceMode
 
 # Context variables for request-scoped data
 current_client_context: ContextVar[ClientContext | None] = ContextVar(
@@ -18,7 +18,7 @@ current_client_context: ContextVar[ClientContext | None] = ContextVar(
 class ContextManager:
     """Manages client context and platform information."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._local_platform_info: PlatformInfo | None = None
 
     def get_local_platform_info(self) -> PlatformInfo:

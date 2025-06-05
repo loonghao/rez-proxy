@@ -7,9 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi_versioning import VersionedFastAPI
 
-from .config import get_config
-from .middleware.context import ContextMiddleware
-from .routers import (
+from rez_proxy.config import get_config
+from rez_proxy.middleware.context import ContextMiddleware
+from rez_proxy.routers import (
     build,
     environments,
     package_ops,
@@ -68,12 +68,12 @@ def create_app() -> FastAPI:
 
     # Root path redirect to documentation
     @app.get("/", include_in_schema=False)
-    async def root():
+    async def root() -> RedirectResponse:
         return RedirectResponse(url="/docs")
 
     # Health check
     @app.get("/health", tags=["system"])
-    async def health_check():
+    async def health_check() -> dict[str, str]:
         return {"status": "healthy", "service": "rez-proxy"}
 
     # Create versioned app

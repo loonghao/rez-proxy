@@ -7,8 +7,8 @@ Handles client context detection and management for each request.
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from ..core.context import get_context_manager
-from ..models.schemas import ClientContext, PlatformInfo, ServiceMode
+from rez_proxy.core.context import get_context_manager
+from rez_proxy.models.schemas import ClientContext, PlatformInfo, ServiceMode
 
 
 class ContextMiddleware(BaseHTTPMiddleware):

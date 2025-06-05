@@ -6,7 +6,7 @@ Rez Proxy CLI - Command line interface.
 import click
 import uvicorn
 
-from .utils.rez_detector import detect_rez_installation
+from rez_proxy.utils.rez_detector import detect_rez_installation
 
 
 @click.command()
@@ -80,7 +80,7 @@ def main(
     }
 
     # Apply configuration
-    from .config import set_rez_config_from_dict
+    from rez_proxy.config import set_rez_config_from_dict
 
     set_rez_config_from_dict(rez_config)
 
