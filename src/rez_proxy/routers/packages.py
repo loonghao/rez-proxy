@@ -9,7 +9,11 @@ from fastapi_versioning import version
 
 from rez_proxy.core.context import get_current_context, is_local_mode
 from rez_proxy.core.platform import PlatformAwareService
-from rez_proxy.models.schemas import PackageInfo, PackageSearchRequest, PackageSearchResponse
+from rez_proxy.models.schemas import (
+    PackageInfo,
+    PackageSearchRequest,
+    PackageSearchResponse,
+)
 
 router = APIRouter()
 

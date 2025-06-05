@@ -36,3 +36,4 @@ Thumbs.db
 dist/
 .env
 .egg-info/
+.shrimp-config.json/

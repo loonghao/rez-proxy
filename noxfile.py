@@ -9,7 +9,7 @@ import nox
 nox.options.default_venv_backend = "uv"
 
 
-@nox.session
+@nox.session(python=["3.10", "3.11", "3.12", "3.13"])
 def pytest(session):
     """Run tests with pytest (working tests only)."""
     session.install("-e", ".[dev]")
@@ -26,7 +26,7 @@ def pytest(session):
     session.run("pytest", *working_tests, "-v", *session.posargs)
 
 
-@nox.session
+@nox.session(python=["3.10", "3.11", "3.12", "3.13"])
 def test(session):
     """Run all tests with coverage."""
     session.install("-e", ".[dev]")
