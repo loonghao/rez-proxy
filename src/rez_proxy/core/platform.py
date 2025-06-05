@@ -6,8 +6,8 @@ Provides platform-aware functionality that works in both local and remote modes.
 
 from typing import Any
 
-from rez_proxy.models.schemas import PlatformInfo
 from rez_proxy.core.context import get_effective_platform_info, is_local_mode
+from rez_proxy.models.schemas import PlatformInfo
 
 
 class PlatformAwareService:
