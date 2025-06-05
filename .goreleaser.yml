@@ -74,13 +74,10 @@ changelog:
     - title: Others
       order: 999
 
-# Global after hooks to publish to PyPI
+# Global after hooks to publish to PyPI using trusted publishing
 after:
   hooks:
-    - cmd: "uv publish"
-      env:
-        - TWINE_USERNAME=__token__
-        - TWINE_PASSWORD={{ .Env.PYPI_TOKEN }}
+    - cmd: "uv publish --trusted-publishing"
       if: "{{ .IsRelease }}"
 
 release:

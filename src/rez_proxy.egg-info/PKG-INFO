@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: rez-proxy
-Version: 0.0.1
+Version: 1.0.0
 Summary: RESTful API proxy for Rez package manager
 Author-email: Hal <hal.long@outlook.com>
 License-Expression: MIT
@@ -34,6 +34,7 @@ Requires-Dist: httpx>=0.24.0; extra == "dev"
 Requires-Dist: ruff>=0.1.0; extra == "dev"
 Requires-Dist: mypy>=1.16.0; extra == "dev"
 Requires-Dist: pyfakefs>=5.0.0; extra == "dev"
+Requires-Dist: commitizen>=3.0.0; extra == "dev"
 Dynamic: license-file
 
 # rez-proxy
