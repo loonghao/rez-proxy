@@ -144,11 +144,17 @@ class PackageService(PlatformAwareService):
         # Extract package information safely
         requires = []
         if hasattr(pkg, "requires") and pkg.requires:
-            requires = [str(req) for req in pkg.requires]
+            try:
+                requires = [str(req) for req in pkg.requires]
+            except (TypeError, AttributeError):
+                requires = []
 
         tools = []
         if hasattr(pkg, "tools") and pkg.tools:
-            tools = list(pkg.tools)
+            try:
+                tools = list(pkg.tools)
+            except (TypeError, AttributeError):
+                tools = []
 
         package_info = {
             "name": pkg.name,
@@ -210,12 +216,18 @@ def _package_to_info(package) -> PackageInfo:
     # Extract package information safely
     requires = []
     if hasattr(pkg, "requires") and pkg.requires:
-        requires = [str(req) for req in pkg.requires]
+        try:
+            requires = [str(req) for req in pkg.requires]
+        except (TypeError, AttributeError):
+            requires = []
 
     # Get tools list
     tools = []
     if hasattr(pkg, "tools") and pkg.tools:
-        tools = list(pkg.tools)
+        try:
+            tools = list(pkg.tools)
+        except (TypeError, AttributeError):
+            tools = []
 
     return PackageInfo(
         name=pkg.name,

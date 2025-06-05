@@ -26,8 +26,8 @@ class PackageSearchRequest(BaseModel):
     """Package search request model."""
 
     query: str = Field(..., description="Search query")
-    limit: int = Field(default=50, description="Maximum number of results")
-    offset: int = Field(default=0, description="Result offset")
+    limit: int = Field(default=50, ge=1, description="Maximum number of results")
+    offset: int = Field(default=0, ge=0, description="Result offset")
     include_prerelease: bool = Field(
         default=False, description="Include prerelease versions"
     )
