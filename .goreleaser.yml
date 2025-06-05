@@ -19,16 +19,12 @@ builds:
     builder: uv
     buildmode: wheel
     dir: .
-    env:
-      - CGO_ENABLED=0
-    
+
   # Build source distribution
   - id: sdist
     builder: uv
     buildmode: sdist
     dir: .
-    env:
-      - CGO_ENABLED=0
 
 archives:
   - id: default
@@ -74,12 +70,6 @@ changelog:
     - title: Others
       order: 999
 
-# Global after hooks to publish to PyPI using trusted publishing
-after:
-  hooks:
-    - cmd: "uv publish --trusted-publishing"
-      if: "{{ .IsRelease }}"
-
 release:
   github:
     owner: loonghao
@@ -89,35 +79,30 @@ release:
   mode: replace
   header: |
     ## rez-proxy {{ .Tag }}
-    
+
     A RESTful API proxy for Rez package manager.
-    
+
     ### Installation
-    
+
     ```bash
     # Install via pip
     pip install rez-proxy=={{ .Version }}
-    
+
     # Or install via uvx
     uvx install rez-proxy=={{ .Version }}
     ```
-    
+
     ### Usage
-    
+
     ```bash
     # Start the server
     uvx rez-proxy
     ```
   footer: |
     **Full Changelog**: https://github.com/loonghao/rez-proxy/compare/{{ .PreviousTag }}...{{ .Tag }}
-    
+
     ## Docker
-    
+
     ```bash
     docker run -p 8000:8000 ghcr.io/loonghao/rez-proxy:{{ .Tag }}
     ```
-
-# Disable SCM release (we'll handle it manually)
-scm:
-  github:
-    enabled: false
