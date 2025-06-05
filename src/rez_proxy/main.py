@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 from .config import get_config
-from .routers import environments, packages, shells, system
+from .routers import build, environments, package_ops, packages, repositories, resolver, rez_config, shells, system, versions
 
 
 def create_app() -> FastAPI:
@@ -38,6 +38,12 @@ def create_app() -> FastAPI:
     app.include_router(packages.router, prefix="/api/v1/packages", tags=["packages"])
     app.include_router(environments.router, prefix="/api/v1/environments", tags=["environments"])
     app.include_router(shells.router, prefix="/api/v1/shells", tags=["shells"])
+    app.include_router(repositories.router, prefix="/api/v1/repositories", tags=["repositories"])
+    app.include_router(versions.router, prefix="/api/v1/versions", tags=["versions"])
+    app.include_router(resolver.router, prefix="/api/v1/resolver", tags=["resolver"])
+    app.include_router(rez_config.router, prefix="/api/v1/config", tags=["config"])
+    app.include_router(package_ops.router, prefix="/api/v1/package-ops", tags=["package-operations"])
+    app.include_router(build.router, prefix="/api/v1/build", tags=["build"])
 
     # Root path redirect to documentation
     @app.get("/", include_in_schema=False)
