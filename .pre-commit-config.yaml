@@ -1,12 +1,63 @@
+# Pre-commit configuration for rez-proxy
+# Install with: pip install pre-commit && pre-commit install
+
 default_language_version:
-  python: python3.10
+  python: python3.11
+
 repos:
+  # Use nox for all checks to maintain consistency
+  - repo: local
+    hooks:
+      - id: nox-pre-commit
+        name: Run nox pre-commit checks
+        entry: uvx nox -s pre_commit
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [commit]
+
+  # Basic file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.3.0
+    rev: v5.0.0
     hooks:
       - id: no-commit-to-branch # prevent direct commits to main branch
       - id: check-yaml
         args: ["--unsafe"]
       - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-case-conflict
       - id: end-of-file-fixer
       - id: trailing-whitespace
+        exclude: ^tests/.*\.py$  # Allow trailing whitespace in test files
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # Optional: Direct ruff checks for faster feedback during development
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        stages: [manual]  # Only run manually with --hook-stage manual
+      - id: ruff-format
+        stages: [manual]  # Only run manually with --hook-stage manual
+
+# Configuration
+default_stages: [commit]
+fail_fast: false
+
+# CI configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

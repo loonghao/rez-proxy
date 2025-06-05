@@ -2,9 +2,10 @@
 Rez configuration API endpoints.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
+from fastapi_versioning import version
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -12,28 +13,32 @@ router = APIRouter()
 
 class ConfigUpdateRequest(BaseModel):
     """Configuration update request."""
+
     key: str
     value: Any
 
 
 @router.get("/")
+@version(1)
 async def get_rez_config():
     """Get complete Rez configuration."""
     try:
         from rez.config import config
-        
+
         # Get all configuration as dict
         config_dict = {}
         for key in dir(config):
-            if not key.startswith('_'):
+            if not key.startswith("_"):
                 try:
                     value = getattr(config, key)
                     # Only include serializable values
-                    if isinstance(value, (str, int, float, bool, list, dict, type(None))):
+                    if isinstance(
+                        value, str | int | float | bool | list | dict | type(None)
+                    ):
                         config_dict[key] = value
                 except Exception:
                     continue
-        
+
         return {"config": config_dict}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get Rez config: {e}")
@@ -44,12 +49,14 @@ async def get_config_value(config_key: str):
     """Get a specific configuration value."""
     try:
         from rez.config import config
-        
+
         if not hasattr(config, config_key):
-            raise HTTPException(status_code=404, detail=f"Configuration key '{config_key}' not found")
-        
+            raise HTTPException(
+                status_code=404, detail=f"Configuration key '{config_key}' not found"
+            )
+
         value = getattr(config, config_key)
-        
+
         return {
             "key": config_key,
             "value": value,
@@ -62,37 +69,40 @@ async def get_config_value(config_key: str):
 
 
 @router.get("/packages-path")
+@version(1)
 async def get_packages_paths():
     """Get configured package paths."""
     try:
         from rez.config import config
-        
+
         paths_info = {
-            "packages_path": getattr(config, 'packages_path', []),
-            "local_packages_path": getattr(config, 'local_packages_path', None),
-            "release_packages_path": getattr(config, 'release_packages_path', []),
+            "packages_path": getattr(config, "packages_path", []),
+            "local_packages_path": getattr(config, "local_packages_path", None),
+            "release_packages_path": getattr(config, "release_packages_path", []),
         }
-        
+
         return paths_info
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get packages paths: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get packages paths: {e}"
+        )
 
 
 @router.get("/platform-info")
 async def get_platform_info():
     """Get platform and system information."""
     try:
-        from rez.system import system
         from rez.config import config
-        
+        from rez.system import system
+
         platform_info = {
             "platform": str(system.platform),
             "arch": str(system.arch),
             "os": str(system.os),
             "python_version": system.python_version,
-            "rez_version": getattr(config, 'rez_version', 'unknown'),
+            "rez_version": getattr(config, "rez_version", "unknown"),
         }
-        
+
         return platform_info
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get platform info: {e}")
@@ -103,25 +113,25 @@ async def get_plugin_info():
     """Get information about loaded plugins."""
     try:
         from rez.plugin_managers import plugin_manager
-        
+
         plugins_info = {}
-        
+
         # Get all plugin types
         plugin_types = [
-            'package_repository',
-            'shell',
-            'build_system',
-            'release_hook',
-            'command',
+            "package_repository",
+            "shell",
+            "build_system",
+            "release_hook",
+            "command",
         ]
-        
+
         for plugin_type in plugin_types:
             try:
                 plugins = plugin_manager.get_plugins(plugin_type)
                 plugins_info[plugin_type] = list(plugins.keys()) if plugins else []
             except Exception:
                 plugins_info[plugin_type] = []
-        
+
         return {"plugins": plugins_info}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get plugin info: {e}")
@@ -132,15 +142,17 @@ async def get_environment_variables():
     """Get Rez-related environment variables."""
     try:
         import os
-        
+
         rez_env_vars = {}
         for key, value in os.environ.items():
-            if key.startswith('REZ_'):
+            if key.startswith("REZ_"):
                 rez_env_vars[key] = value
-        
+
         return {"environment_variables": rez_env_vars}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get environment variables: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get environment variables: {e}"
+        )
 
 
 @router.get("/cache-info")
@@ -148,14 +160,20 @@ async def get_cache_info():
     """Get package cache information."""
     try:
         from rez.config import config
-        
+
         cache_info = {
-            "package_cache_disabled": getattr(config, 'disable_rez_1_compatibility', False),
-            "package_cache_max_variant_logs": getattr(config, 'package_cache_max_variant_logs', 0),
-            "package_cache_same_device": getattr(config, 'package_cache_same_device', True),
-            "package_cache_log_days": getattr(config, 'package_cache_log_days', 7),
+            "package_cache_disabled": getattr(
+                config, "disable_rez_1_compatibility", False
+            ),
+            "package_cache_max_variant_logs": getattr(
+                config, "package_cache_max_variant_logs", 0
+            ),
+            "package_cache_same_device": getattr(
+                config, "package_cache_same_device", True
+            ),
+            "package_cache_log_days": getattr(config, "package_cache_log_days", 7),
         }
-        
+
         return cache_info
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get cache info: {e}")
@@ -166,14 +184,16 @@ async def get_build_info():
     """Get build system information."""
     try:
         from rez.config import config
-        
+
         build_info = {
-            "build_directory": getattr(config, 'build_directory', None),
-            "build_thread_count": getattr(config, 'build_thread_count', 'logical_cores'),
-            "cmake_build_args": getattr(config, 'cmake_build_args', []),
-            "make_build_args": getattr(config, 'make_build_args', []),
+            "build_directory": getattr(config, "build_directory", None),
+            "build_thread_count": getattr(
+                config, "build_thread_count", "logical_cores"
+            ),
+            "cmake_build_args": getattr(config, "cmake_build_args", []),
+            "make_build_args": getattr(config, "make_build_args", []),
         }
-        
+
         return build_info
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get build info: {e}")
@@ -183,34 +203,41 @@ async def get_build_info():
 async def validate_config():
     """Validate current Rez configuration."""
     try:
-        from rez.config import config
         import os
-        
+
+        from rez.config import config
+
         validation_results = {
             "valid": True,
             "warnings": [],
             "errors": [],
         }
-        
+
         # Check packages paths
-        packages_path = getattr(config, 'packages_path', [])
+        packages_path = getattr(config, "packages_path", [])
         if not packages_path:
             validation_results["warnings"].append("No packages_path configured")
         else:
             for path in packages_path:
                 if not os.path.exists(path):
-                    validation_results["warnings"].append(f"Packages path does not exist: {path}")
+                    validation_results["warnings"].append(
+                        f"Packages path does not exist: {path}"
+                    )
                 elif not os.access(path, os.R_OK):
-                    validation_results["errors"].append(f"No read access to packages path: {path}")
-        
+                    validation_results["errors"].append(
+                        f"No read access to packages path: {path}"
+                    )
+
         # Check local packages path
-        local_path = getattr(config, 'local_packages_path', None)
+        local_path = getattr(config, "local_packages_path", None)
         if local_path and not os.path.exists(local_path):
-            validation_results["warnings"].append(f"Local packages path does not exist: {local_path}")
-        
+            validation_results["warnings"].append(
+                f"Local packages path does not exist: {local_path}"
+            )
+
         if validation_results["errors"]:
             validation_results["valid"] = False
-        
+
         return validation_results
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to validate config: {e}")

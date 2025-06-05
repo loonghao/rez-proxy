@@ -43,6 +43,126 @@ uvx rez-proxy --host 0.0.0.0 --port 8080
 
 The API will be available at `http://localhost:8000` with interactive documentation at `http://localhost:8000/docs`.
 
+## Development
+
+This project uses [nox](https://nox.thea.codes/) for unified task management across local development and CI environments.
+
+### 🚨 Important: Always Use Nox
+
+**DO NOT** run tests directly with `uvx pytest` or `python -m pytest`. This will fail with import errors because dependencies are not installed globally.
+
+**ALWAYS** use nox for consistent, isolated environments:
+
+```bash
+# ✅ Correct way
+uvx nox -s test
+make test
+
+# ❌ Wrong way - will fail
+uvx pytest
+python -m pytest
+```
+
+### Quick Development Setup
+
+```bash
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install nox
+uvx install nox
+
+# Set up development environment
+make install
+# or
+uvx nox -s dev
+
+# Start development server
+make serve
+# or
+uvx nox -s serve
+```
+
+### Testing & Quality
+
+```bash
+# Run all tests with coverage
+make test
+uvx nox -s test
+
+# Run tests without coverage (faster)
+make test-fast
+uvx nox -s test_fast
+
+# Run specific test categories
+make test-unit          # Unit tests only
+make test-integration   # Integration tests only
+make test-routers       # Router tests only
+
+# Generate coverage report
+make coverage
+make coverage-html      # Open HTML report in browser
+
+# Code quality checks
+make lint               # Linting
+make format             # Code formatting
+make mypy               # Type checking
+make security           # Security scanning
+make quality            # All quality checks
+
+# Pre-commit checks
+make pre-commit
+uvx nox -s pre_commit
+```
+
+### CI/CD Pipeline
+
+```bash
+# Run full CI pipeline locally
+make ci
+uvx nox -s ci
+
+# Run fast CI checks
+make ci-fast
+uvx nox -s ci_fast
+
+# Release checks
+make release-check
+uvx nox -s release_check
+```
+
+### Available Commands
+
+```bash
+# See all available commands
+make help
+uvx nox -l
+
+# Development servers
+make serve              # Development server with auto-reload
+make serve-debug        # Enhanced debugging
+make serve-prod         # Production-like server
+make serve-remote       # Remote access server
+
+# Utilities
+make demo               # Run API demo
+make docs               # Show documentation info
+make clean              # Clean build artifacts
+make build              # Build package
+```
+
+### Git Hooks
+
+```bash
+# Install pre-commit hooks
+make install-hooks
+
+# Uninstall pre-commit hooks
+make uninstall-hooks
+```
+
+The pre-commit hooks will automatically run `uvx nox -s pre_commit` before each commit, ensuring code quality.
+
 ## 核心文件实现
 
 ### 1. CLI 入口 (cli.py)
