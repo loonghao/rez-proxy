@@ -5,10 +5,10 @@ Rez installation detection utilities.
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 
-def detect_rez_installation() -> Dict[str, Any]:
+def detect_rez_installation() -> dict[str, Any]:
     """Detect Rez installation information."""
 
     try:
@@ -25,22 +25,47 @@ def detect_rez_installation() -> Dict[str, Any]:
 
         # Configuration information
         try:
-            info.update({
-                "packages_path": config.packages_path,
-                "local_packages_path": config.local_packages_path,
-                "release_packages_path": config.release_packages_path,
-                "config_file": getattr(config, 'config_file', None),
-                "platform": config.platform.name,
-                "arch": config.arch.name,
-                "os": config.os.name,
-            })
+            # Access config attributes safely
+            info.update(
+                {
+                    "packages_path": getattr(config, "packages_path", []),
+                    "local_packages_path": getattr(config, "local_packages_path", None),
+                    "release_packages_path": getattr(
+                        config, "release_packages_path", []
+                    ),
+                    "config_file": getattr(config, "config_file", None),
+                }
+            )
+
+            # Platform information
+            try:
+                from rez.system import system
+
+                info.update(
+                    {
+                        "platform": str(system.platform),
+                        "arch": str(system.arch),
+                        "os": str(system.os),
+                    }
+                )
+            except Exception:
+                # Fallback platform detection
+                import platform
+
+                info.update(
+                    {
+                        "platform": platform.system().lower(),
+                        "arch": platform.machine(),
+                        "os": f"{platform.system().lower()}-{platform.release()}",
+                    }
+                )
+
         except Exception as e:
             info["config_error"] = str(e)
 
         # Environment variables
         rez_env_vars = {
-            key: value for key, value in os.environ.items()
-            if key.startswith('REZ_')
+            key: value for key, value in os.environ.items() if key.startswith("REZ_")
         }
         info["environment_variables"] = rez_env_vars
 
@@ -52,7 +77,7 @@ def detect_rez_installation() -> Dict[str, Any]:
         raise RuntimeError(f"Rez detection failed: {e}")
 
 
-def validate_rez_environment() -> List[str]:
+def validate_rez_environment() -> list[str]:
     """Validate Rez environment, return list of warnings."""
     warnings = []
 
@@ -72,8 +97,11 @@ def validate_rez_environment() -> List[str]:
         packages_path = info.get("packages_path", [])
         if isinstance(packages_path, list):
             for path in packages_path:
-                if not os.access(path, os.R_OK):
-                    warnings.append(f"No read access to packages path: {path}")
+                if isinstance(path, str) and os.path.exists(path):
+                    if not os.access(path, os.R_OK):
+                        warnings.append(f"No read access to packages path: {path}")
+                elif isinstance(path, str):
+                    warnings.append(f"Packages path does not exist: {path}")
 
     except Exception as e:
         warnings.append(f"Environment validation failed: {e}")

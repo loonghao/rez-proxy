@@ -3,9 +3,6 @@
 Rez Proxy CLI - Command line interface.
 """
 
-import os
-import sys
-
 import click
 import uvicorn
 
@@ -13,40 +10,121 @@ from .utils.rez_detector import detect_rez_installation
 
 
 @click.command()
-@click.option('--host', default='localhost', help='Host to bind to')
-@click.option('--port', default=8000, type=int, help='Port to bind to')
-@click.option('--reload', is_flag=True, help='Enable auto-reload for development')
-@click.option('--log-level', default='info', help='Log level')
-@click.option('--config-file', help='Rez config file path')
-@click.option('--packages-path', help='Override packages path')
-@click.option('--workers', default=1, type=int, help='Number of worker processes')
-def main(host, port, reload, log_level, config_file, packages_path, workers):
+@click.option("--host", default="localhost", help="Host to bind to")
+@click.option("--port", default=8000, type=int, help="Port to bind to")
+@click.option("--reload", is_flag=True, help="Enable auto-reload for development")
+@click.option("--log-level", default="info", help="Log level")
+@click.option("--workers", default=1, type=int, help="Number of worker processes")
+# Rez configuration options
+@click.option("--rez-config-file", help="Rez config file path")
+@click.option("--rez-packages-path", help="Rez packages path (colon-separated)")
+@click.option("--rez-local-packages-path", help="Rez local packages path")
+@click.option(
+    "--rez-release-packages-path", help="Rez release packages path (colon-separated)"
+)
+@click.option("--rez-tmpdir", help="Rez temporary directory")
+@click.option("--rez-cache-path", help="Rez package cache path")
+@click.option("--rez-disable-home-config", is_flag=True, help="Disable Rez home config")
+@click.option("--rez-quiet", is_flag=True, help="Enable Rez quiet mode")
+@click.option("--rez-debug", is_flag=True, help="Enable Rez debug mode")
+# Legacy options for backward compatibility
+@click.option(
+    "--config-file", help="Legacy: Rez config file path (use --rez-config-file)"
+)
+@click.option("--packages-path", help="Legacy: packages path (use --rez-packages-path)")
+def main(
+    host,
+    port,
+    reload,
+    log_level,
+    workers,
+    rez_config_file,
+    rez_packages_path,
+    rez_local_packages_path,
+    rez_release_packages_path,
+    rez_tmpdir,
+    rez_cache_path,
+    rez_disable_home_config,
+    rez_quiet,
+    rez_debug,
+    config_file,
+    packages_path,
+):
     """
     Rez Proxy - RESTful API server for Rez package manager.
+
+    Configure Rez environment through command line options or environment variables.
+    Environment variables use REZ_PROXY_ prefix (e.g., REZ_PROXY_REZ_CONFIG_FILE).
     """
 
-    # Set Rez configuration file
-    if config_file:
-        os.environ['REZ_CONFIG_FILE'] = config_file
+    # Handle legacy options
+    if config_file and not rez_config_file:
+        rez_config_file = config_file
+        click.echo("⚠️  --config-file is deprecated, use --rez-config-file")
 
-    # Set packages path
-    if packages_path:
-        os.environ['REZ_PACKAGES_PATH'] = packages_path
+    if packages_path and not rez_packages_path:
+        rez_packages_path = packages_path
+        click.echo("⚠️  --packages-path is deprecated, use --rez-packages-path")
+
+    # Set Rez configuration environment variables
+    rez_config = {
+        "rez_config_file": rez_config_file,
+        "rez_packages_path": rez_packages_path,
+        "rez_local_packages_path": rez_local_packages_path,
+        "rez_release_packages_path": rez_release_packages_path,
+        "rez_tmpdir": rez_tmpdir,
+        "rez_cache_packages_path": rez_cache_path,
+        "rez_disable_home_config": rez_disable_home_config,
+        "rez_quiet": rez_quiet,
+        "rez_debug": rez_debug,
+    }
+
+    # Apply configuration
+    from .config import set_rez_config_from_dict
+
+    set_rez_config_from_dict(rez_config)
+
+    click.echo("🔧 Rez Configuration Applied:")
+    for key, value in rez_config.items():
+        if value:
+            click.echo(f"   {key}: {value}")
 
     # Detect Rez installation
     try:
         rez_info = detect_rez_installation()
         click.echo(f"✅ Found Rez {rez_info['version']}")
-        click.echo(f"📁 Packages path: {rez_info['packages_path']}")
+
+        # Show packages path if available
+        packages_path = rez_info.get("packages_path", [])
+        if packages_path:
+            if isinstance(packages_path, list):
+                click.echo(
+                    f"📁 Packages path: {', '.join(str(p) for p in packages_path[:3])}"
+                )
+                if len(packages_path) > 3:
+                    click.echo(f"   ... and {len(packages_path) - 3} more")
+            else:
+                click.echo(f"📁 Packages path: {packages_path}")
+        else:
+            click.echo("⚠️  No packages path configured")
+
         click.echo(f"🐍 Python: {rez_info['python_path']}")
+
+        # Show any config errors as warnings
+        if "config_error" in rez_info:
+            click.echo(f"⚠️  Config warning: {rez_info['config_error']}")
+
     except Exception as e:
-        click.echo(f"❌ Rez detection failed: {e}", err=True)
-        sys.exit(1)
+        click.echo(f"⚠️  Rez detection warning: {e}", err=True)
+        click.echo("🔄 Continuing with limited functionality...")
+        # Don't exit, continue with limited functionality
 
     # Create application (will be created by uvicorn factory)
 
     click.echo(f"🚀 Starting Rez Proxy on http://{host}:{port}")
     click.echo(f"📖 API docs: http://{host}:{port}/docs")
+    click.echo(f"🔗 V1 API: http://{host}:{port}/api/v1/")
+    click.echo(f"🔗 Latest API: http://{host}:{port}/latest/")
     click.echo(f"🔄 Reload: {reload}")
 
     # Start server
@@ -57,7 +135,7 @@ def main(host, port, reload, log_level, config_file, packages_path, workers):
         port=port,
         reload=reload,
         log_level=log_level,
-        workers=workers if not reload else 1
+        workers=workers if not reload else 1,
     )
 
 

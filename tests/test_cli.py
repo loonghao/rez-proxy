@@ -2,9 +2,9 @@
 Test CLI functionality.
 """
 
-import pytest
-from click.testing import CliRunner
 from unittest.mock import patch
+
+from click.testing import CliRunner
 
 from rez_proxy.cli import main
 
@@ -14,10 +14,10 @@ from rez_proxy.cli import main
 def test_cli_basic(mock_uvicorn, mock_detect, mock_rez_info):
     """Test basic CLI functionality."""
     mock_detect.return_value = mock_rez_info
-    
+
     runner = CliRunner()
     result = runner.invoke(main, ["--help"])
-    
+
     assert result.exit_code == 0
     assert "Rez Proxy" in result.output
 
@@ -26,9 +26,9 @@ def test_cli_basic(mock_uvicorn, mock_detect, mock_rez_info):
 def test_cli_rez_detection_failure(mock_detect):
     """Test CLI behavior when Rez detection fails."""
     mock_detect.side_effect = RuntimeError("Rez not found")
-    
+
     runner = CliRunner()
     result = runner.invoke(main, [])
-    
+
     assert result.exit_code == 1
-    assert "Rez detection failed" in result.output
+    assert "Rez not found" in result.output

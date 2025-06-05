@@ -5,7 +5,6 @@ Environment API endpoints.
 import asyncio
 import uuid
 from datetime import datetime
-from typing import Dict
 
 from fastapi import APIRouter, HTTPException
 
@@ -20,7 +19,7 @@ from ..models.schemas import (
 router = APIRouter()
 
 # In-memory storage for environments (in production, use Redis or database)
-_environments: Dict[str, Dict] = {}
+_environments: dict[str, dict] = {}
 
 
 def _package_to_info(package) -> PackageInfo:
@@ -28,13 +27,13 @@ def _package_to_info(package) -> PackageInfo:
     return PackageInfo(
         name=package.name,
         version=str(package.version),
-        description=getattr(package, 'description', None),
-        authors=getattr(package, 'authors', None),
-        requires=[str(req) for req in getattr(package, 'requires', [])],
-        variants=getattr(package, 'variants', None),
-        tools=getattr(package, 'tools', None),
-        commands=getattr(package, 'commands', None),
-        uri=getattr(package, 'uri', None),
+        description=getattr(package, "description", None),
+        authors=getattr(package, "authors", None),
+        requires=[str(req) for req in getattr(package, "requires", [])],
+        variants=getattr(package, "variants", None),
+        tools=getattr(package, "tools", None),
+        commands=getattr(package, "commands", None),
+        uri=getattr(package, "uri", None),
     )
 
 
@@ -49,11 +48,13 @@ async def resolve_environment(request: EnvironmentResolveRequest):
 
         # Check if resolution was successful
         from rez.resolver import ResolverStatus
+
         if context.status != ResolverStatus.solved:
-            failure_desc = getattr(context, 'failure_description', 'Unknown resolution failure')
+            failure_desc = getattr(
+                context, "failure_description", "Unknown resolution failure"
+            )
             raise HTTPException(
-                status_code=400,
-                detail=f"Failed to resolve environment: {failure_desc}"
+                status_code=400, detail=f"Failed to resolve environment: {failure_desc}"
             )
 
         # Generate environment ID
@@ -64,13 +65,14 @@ async def resolve_environment(request: EnvironmentResolveRequest):
 
         # Store environment info
         from rez.system import system
+
         env_info = {
             "context": context,
             "packages": packages,
             "created_at": datetime.utcnow().isoformat(),
-            "platform": str(getattr(context, 'platform', system.platform)),
-            "arch": str(getattr(context, 'arch', system.arch)),
-            "os_name": str(getattr(context, 'os', system.os)),
+            "platform": str(getattr(context, "platform", system.platform)),
+            "arch": str(getattr(context, "arch", system.arch)),
+            "os_name": str(getattr(context, "os", system.os)),
         }
         _environments[env_id] = env_info
 
@@ -86,7 +88,9 @@ async def resolve_environment(request: EnvironmentResolveRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to resolve environment: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to resolve environment: {e}"
+        )
 
 
 @router.get("/{env_id}", response_model=EnvironmentInfo)
@@ -124,6 +128,7 @@ async def execute_command(env_id: str, request: CommandExecuteRequest):
 
         # Execute command in the resolved context
         import time
+
         start_time = time.time()
 
         # Use context.execute_command if available, otherwise use subprocess

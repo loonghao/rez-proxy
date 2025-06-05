@@ -2,8 +2,9 @@
 Test Rez integration to ensure we're using the correct Rez APIs.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 
 def test_rez_packages_api_usage():
@@ -36,53 +37,50 @@ def test_rez_packages_api_usage():
 
 def test_rez_resolved_context_api_usage():
     """Test that we're using the correct ResolvedContext API."""
-    
+
     from rez.resolver import ResolverStatus
-    
+
     # Mock ResolvedContext
     mock_context = MagicMock()
     mock_context.status = ResolverStatus.solved
     mock_context.resolved_packages = []
-    
+
     # Mock system
     mock_system = MagicMock()
     mock_system.platform = "linux"
     mock_system.arch = "x86_64"
     mock_system.os = "linux"
-    
-    with patch("rez.resolved_context.ResolvedContext") as mock_resolved_context, \
-         patch("rez.system.system", mock_system):
-        
+
+    with (
+        patch("rez.resolved_context.ResolvedContext") as mock_resolved_context,
+        patch("rez.system.system", mock_system),
+    ):
         mock_resolved_context.return_value = mock_context
-        
-        from rez_proxy.routers.environments import resolve_environment
-        from rez_proxy.models.schemas import EnvironmentResolveRequest
-        
+
         # This should not raise an exception
-        request = EnvironmentResolveRequest(packages=["python-3.9"])
-        
+        # request = EnvironmentResolveRequest(packages=["python-3.9"])  # Test data (not used)
+
         # The function should use the correct Rez APIs
         mock_resolved_context.assert_not_called()  # Not called yet
 
 
 def test_rez_shells_api_usage():
     """Test that we're using the correct Rez shells API."""
-    
+
     mock_shell_class = MagicMock()
     mock_shell_class.name.return_value = "bash"
     mock_shell_class.executable = "bash"
     mock_shell_class.file_extension.return_value = ".sh"
     mock_shell_class.is_available.return_value = True
     mock_shell_class.executable_filepath.return_value = "/bin/bash"
-    
-    with patch("rez.shells.get_shell_types") as mock_get_types, \
-         patch("rez.shells.get_shell_class") as mock_get_class:
-        
+
+    with (
+        patch("rez.shells.get_shell_types") as mock_get_types,
+        patch("rez.shells.get_shell_class") as mock_get_class,
+    ):
         mock_get_types.return_value = ["bash", "tcsh", "cmd"]
         mock_get_class.return_value = mock_shell_class
-        
-        from rez_proxy.routers.shells import list_shells, get_shell_info
-        
+
         # Test shell listing
         # This would be tested in actual API tests
 
@@ -116,34 +114,35 @@ def test_package_info_conversion_with_variant():
 
     assert package_info.name == "maya"
     assert package_info.version == "2023.1"
-    assert package_info.variants == [{"index": 0, "subpath": "platform-linux/arch-x86_64"}]
+    assert package_info.variants == [
+        {"index": 0, "subpath": "platform-linux/arch-x86_64"}
+    ]
 
 
 def test_package_search_uses_correct_api():
     """Test that package search uses the correct Rez API pattern."""
-    
+
     # This test ensures we're following the correct pattern:
     # 1. Use iter_package_families() to get families
     # 2. Use iter_packages(family_name) to get packages from each family
-    
+
     mock_family = MagicMock()
     mock_family.name = "python"
-    
+
     mock_package = MagicMock()
     mock_package.name = "python"
     mock_package.version = "3.9.0"
     mock_package.description = "Python interpreter"
-    
-    with patch("rez.packages.iter_package_families") as mock_iter_families, \
-         patch("rez.packages.iter_packages") as mock_iter_packages:
-        
+
+    with (
+        patch("rez.packages.iter_package_families") as mock_iter_families,
+        patch("rez.packages.iter_packages") as mock_iter_packages,
+    ):
         mock_iter_families.return_value = [mock_family]
         mock_iter_packages.return_value = [mock_package]
-        
+
         # Import the search function
-        from rez_proxy.routers.packages import search_packages
-        from rez_proxy.models.schemas import PackageSearchRequest
-        
+
         # The function should use iter_package_families first
         # then iter_packages(family_name) for each family
         # This is the correct Rez API usage pattern
@@ -152,26 +151,27 @@ def test_package_search_uses_correct_api():
 @pytest.mark.asyncio
 async def test_environment_resolution_error_handling():
     """Test proper error handling for environment resolution failures."""
-    
+
     from rez.resolver import ResolverStatus
-    
+
     # Mock a failed resolution
     mock_context = MagicMock()
     mock_context.status = ResolverStatus.failed
     mock_context.failure_description = "Package 'nonexistent' not found"
-    
+
     with patch("rez.resolved_context.ResolvedContext") as mock_resolved_context:
         mock_resolved_context.return_value = mock_context
-        
-        from rez_proxy.routers.environments import resolve_environment
-        from rez_proxy.models.schemas import EnvironmentResolveRequest
+
         from fastapi import HTTPException
-        
+
+        from rez_proxy.models.schemas import EnvironmentResolveRequest
+        from rez_proxy.routers.environments import resolve_environment
+
         request = EnvironmentResolveRequest(packages=["nonexistent-package"])
-        
+
         # Should raise HTTPException with 400 status code
         with pytest.raises(HTTPException) as exc_info:
             await resolve_environment(request)
-        
+
         assert exc_info.value.status_code == 400
         assert "Package 'nonexistent' not found" in str(exc_info.value.detail)

@@ -1,48 +1,53 @@
 """
-Shell API endpoints.
+Shell API endpoints with context awareness.
 """
 
+from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+from fastapi_versioning import version
+
+from ..core.platform import ShellService
 
 router = APIRouter()
 
 
 @router.get("/")
-async def list_shells():
-    """List available shells."""
+@version(1)
+async def list_shells(request: Request) -> dict[str, Any]:
+    """List available shells with platform awareness."""
     try:
-        from rez.shells import get_shell_types
+        service = ShellService()
+        shells = service.get_available_shells()
 
-        shell_types = get_shell_types()
-        return {"shells": shell_types}
+        from ..core.context import get_current_context
+
+        context = get_current_context()
+
+        return {
+            "shells": shells,
+            "service_mode": context.service_mode.value if context else "local",
+            "platform": service.get_platform_info().platform,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to list shells: {e}")
 
 
 @router.get("/{shell_name}")
-async def get_shell_info(shell_name: str):
-    """Get information about a specific shell."""
+@version(1)
+async def get_shell_info(shell_name: str, request: Request) -> dict[str, Any]:
+    """Get information about a specific shell with platform awareness."""
     try:
-        from rez.shells import get_shell_class
+        service = ShellService()
+        shell_info = service.get_shell_info(shell_name)
 
-        shell_class = get_shell_class(shell_name)
+        from ..core.context import get_current_context
 
-        # Get class-level information
-        info = {
-            "name": shell_class.name(),
-            "executable": getattr(shell_class, 'executable', None),
-            "file_extension": getattr(shell_class, 'file_extension', lambda: None)(),
-            "is_available": shell_class.is_available(),
-        }
+        context = get_current_context()
+        shell_info["service_mode"] = context.service_mode.value if context else "local"
+        shell_info["platform"] = service.get_platform_info().platform
 
-        # Try to get executable filepath
-        try:
-            info["executable_filepath"] = shell_class.executable_filepath()
-        except Exception:
-            info["executable_filepath"] = None
-
-        return info
+        return shell_info
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get shell info: {e}")
 
@@ -53,6 +58,5 @@ async def spawn_shell(shell_name: str, env_id: str):
     # This would require more complex implementation with WebSocket or similar
     # for interactive shell sessions
     raise HTTPException(
-        status_code=501,
-        detail="Interactive shell spawning not implemented yet"
+        status_code=501, detail="Interactive shell spawning not implemented yet"
     )
