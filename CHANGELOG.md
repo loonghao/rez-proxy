@@ -5,9 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-## [1.0.0] - 2024-12-19
 
 ### Added
 - Complete RESTful API for Rez package manager
@@ -40,3 +37,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [Unreleased]: https://github.com/loonghao/rez-proxy/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/loonghao/rez-proxy/releases/tag/v1.0.0
+
+## v1.1.0 (2025-06-05)
+
+### Feat
+
+- configure PyPI trusted publishing and commitizen
+- prepare v1.0.0 release - fix code formatting and update version
+- add comprehensive RESTful API endpoints for complete Rez functionality
+- implement rez-proxy RESTful API with GoReleaser
+
+### Fix
+
+- temporarily disable mypy check in GoReleaser
+- resolve all package router test failures
+- resolve all package router test failures
+- resolve CLI test hanging issue
+- correct Rez core API integration and improve package handling
+
+### Refactor
+
+- convert relative imports to absolute imports
