@@ -11,11 +11,11 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi_versioning import version
 
-from ..core.context import get_current_context, is_local_mode, is_remote_mode
-from ..core.platform import RezConfigService
-from ..core.rez_config import get_rez_config_manager
-from ..models.schemas import PlatformInfo
-from ..utils.rez_detector import detect_rez_installation
+from rez_proxy.core.context import get_current_context, is_local_mode, is_remote_mode
+from rez_proxy.core.platform import RezConfigService
+from rez_proxy.core.rez_config import get_rez_config_manager
+from rez_proxy.models.schemas import PlatformInfo
+from rez_proxy.utils.rez_detector import detect_rez_installation
 
 router = APIRouter()
 
@@ -363,8 +363,8 @@ async def set_platform_context(
 ) -> dict[str, Any]:
     """Set platform context for remote mode."""
     try:
-        from ..core.context import get_context_manager
-        from ..models.schemas import ServiceMode
+        from rez_proxy.core.context import get_context_manager
+        from rez_proxy.models.schemas import ServiceMode
 
         context_manager = get_context_manager()
 

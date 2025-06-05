@@ -7,9 +7,9 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi_versioning import version
 
-from ..core.context import get_current_context, is_local_mode
-from ..core.platform import PlatformAwareService
-from ..models.schemas import PackageInfo, PackageSearchRequest, PackageSearchResponse
+from rez_proxy.core.context import get_current_context, is_local_mode
+from rez_proxy.core.platform import PlatformAwareService
+from rez_proxy.models.schemas import PackageInfo, PackageSearchRequest, PackageSearchResponse
 
 router = APIRouter()
 

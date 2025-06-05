@@ -4,8 +4,8 @@ Rez Proxy configuration management.
 
 import os
 
-from pydantic import ConfigDict, Field
-from pydantic_settings import BaseSettings
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class RezProxyConfig(BaseSettings):
@@ -59,7 +59,7 @@ class RezProxyConfig(BaseSettings):
         default=300, description="Max command timeout in seconds"
     )
 
-    model_config = ConfigDict(env_prefix="REZ_PROXY_API_", case_sensitive=False)
+    model_config = SettingsConfigDict(env_prefix="REZ_PROXY_API_", case_sensitive=False)
 
 
 _config: RezProxyConfig | None = None
