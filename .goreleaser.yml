@@ -1,0 +1,126 @@
+# GoReleaser configuration for rez-proxy
+# https://goreleaser.com/customization/builds/uv/
+
+version: 2
+
+project_name: rez-proxy
+
+before:
+  hooks:
+    # Install dependencies and run tests
+    - uv sync --all-extras --dev
+    - uvx nox -s lint
+    - uvx nox -s mypy
+    - uvx nox -s pytest
+
+builds:
+  # Build wheel
+  - id: wheel
+    builder: uv
+    buildmode: wheel
+    dir: .
+    env:
+      - CGO_ENABLED=0
+    
+  # Build source distribution
+  - id: sdist
+    builder: uv
+    buildmode: sdist
+    dir: .
+    env:
+      - CGO_ENABLED=0
+
+archives:
+  - id: default
+    format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    files:
+      - README.md
+      - README_zh.md
+      - LICENSE
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+      - "^style:"
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: 'Bug fixes'
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: 'Performance improvements'
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Others
+      order: 999
+
+# Global after hooks to publish to PyPI
+after:
+  hooks:
+    - cmd: "uv publish"
+      env:
+        - TWINE_USERNAME=__token__
+        - TWINE_PASSWORD={{ .Env.PYPI_TOKEN }}
+      if: "{{ .IsRelease }}"
+
+release:
+  github:
+    owner: loonghao
+    name: rez-proxy
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## rez-proxy {{ .Tag }}
+    
+    A RESTful API proxy for Rez package manager.
+    
+    ### Installation
+    
+    ```bash
+    # Install via pip
+    pip install rez-proxy=={{ .Version }}
+    
+    # Or install via uvx
+    uvx install rez-proxy=={{ .Version }}
+    ```
+    
+    ### Usage
+    
+    ```bash
+    # Start the server
+    uvx rez-proxy
+    ```
+  footer: |
+    **Full Changelog**: https://github.com/loonghao/rez-proxy/compare/{{ .PreviousTag }}...{{ .Tag }}
+    
+    ## Docker
+    
+    ```bash
+    docker run -p 8000:8000 ghcr.io/loonghao/rez-proxy:{{ .Tag }}
+    ```
+
+# Disable SCM release (we'll handle it manually)
+scm:
+  github:
+    enabled: false
