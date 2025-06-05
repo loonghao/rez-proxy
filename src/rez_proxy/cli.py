@@ -115,9 +115,9 @@ def main(
             click.echo(f"⚠️  Config warning: {rez_info['config_error']}")
 
     except Exception as e:
-        click.echo(f"⚠️  Rez detection warning: {e}", err=True)
-        click.echo("🔄 Continuing with limited functionality...")
-        # Don't exit, continue with limited functionality
+        click.echo(f"❌ Rez detection failed: {e}", err=True)
+        click.echo("💡 Please ensure Rez is properly installed and configured.")
+        raise click.ClickException(f"Rez detection failed: {e}")
 
     # Create application (will be created by uvicorn factory)
 
