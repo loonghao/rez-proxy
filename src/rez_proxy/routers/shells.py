@@ -24,15 +24,25 @@ async def list_shells():
 async def get_shell_info(shell_name: str):
     """Get information about a specific shell."""
     try:
-        from rez.shells import create_shell
+        from rez.shells import get_shell_class
 
-        shell = create_shell(shell_name)
-        return {
-            "name": shell.name(),
-            "executable": shell.executable,
-            "file_extension": getattr(shell, 'file_extension', None),
-            "startup_capabilities": getattr(shell, 'startup_capabilities', {}),
+        shell_class = get_shell_class(shell_name)
+
+        # Get class-level information
+        info = {
+            "name": shell_class.name(),
+            "executable": getattr(shell_class, 'executable', None),
+            "file_extension": getattr(shell_class, 'file_extension', lambda: None)(),
+            "is_available": shell_class.is_available(),
         }
+
+        # Try to get executable filepath
+        try:
+            info["executable_filepath"] = shell_class.executable_filepath()
+        except Exception:
+            info["executable_filepath"] = None
+
+        return info
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get shell info: {e}")
 
