@@ -15,3 +15,4 @@ httpx>=0.24.0
 ruff>=0.1.0
 mypy>=1.16.0
 pyfakefs>=5.0.0
+commitizen>=3.0.0
