@@ -3,14 +3,13 @@ Name: rez-proxy
 Version: 0.0.1
 Summary: RESTful API proxy for Rez package manager
 Author-email: Hal <hal.long@outlook.com>
-License: MIT
+License-Expression: MIT
 Project-URL: Homepage, https://github.com/loonghao/rez-proxy
 Project-URL: Documentation, https://github.com/loonghao/rez-proxy#readme
 Project-URL: Repository, https://github.com/loonghao/rez-proxy.git
 Project-URL: Issues, https://github.com/loonghao/rez-proxy/issues
 Classifier: Development Status :: 4 - Beta
 Classifier: Intended Audience :: Developers
-Classifier: License :: OSI Approved :: MIT License
 Classifier: Programming Language :: Python :: 3
 Classifier: Programming Language :: Python :: 3.8
 Classifier: Programming Language :: Python :: 3.9
