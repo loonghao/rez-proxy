@@ -135,18 +135,14 @@ const environment = await rezApi.post('/environments/resolve', {
 
 ## 发布流程
 
-我们使用类似 GoReleaser 的简化发布流程：
+项目使用 GitHub Actions 自动发布到 PyPI：
 
 ```bash
-# 运行发布检查
-uvx nox -s release-check
-
-# 测试发布（干运行）
-uvx nox -s release-dry-run
-
-# 创建实际发布（通过 GitHub Actions）
+# 创建发布标签
 git tag v1.0.0
 git push origin v1.0.0
+
+# GitHub Actions 将自动构建并发布到 PyPI
 ```
 
 ## 贡献
@@ -166,4 +162,3 @@ git push origin v1.0.0
 - [Rez](https://github.com/AcademySoftwareFoundation/rez) - 出色的包管理器
 - [FastAPI](https://fastapi.tiangolo.com/) - 使用的 Web 框架
 - [uv](https://github.com/astral-sh/uv) - 快速的 Python 包安装器
-- [GoReleaser](https://goreleaser.com/) - 简化的发布流程
