@@ -1,0 +1,2 @@
+[console_scripts]
+rez-proxy = rez_proxy.cli:main

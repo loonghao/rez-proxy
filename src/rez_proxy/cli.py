@@ -6,6 +6,7 @@ Rez Proxy CLI - Command line interface.
 import click
 import uvicorn
 
+from rez_proxy.config import get_config
 from rez_proxy.utils.rez_detector import detect_rez_installation
 
 
@@ -27,7 +28,6 @@ from rez_proxy.utils.rez_detector import detect_rez_installation
 @click.option("--rez-disable-home-config", is_flag=True, help="Disable Rez home config")
 @click.option("--rez-quiet", is_flag=True, help="Enable Rez quiet mode")
 @click.option("--rez-debug", is_flag=True, help="Enable Rez debug mode")
-
 def main(
     host: str,
     port: int,
