@@ -49,4 +49,4 @@ jobs:
 
     - name: Publish to PyPI
       run: |
-        uv publish --trusted-publishing
+        uv publish --trusted-publishing=always
