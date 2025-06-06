@@ -35,7 +35,9 @@ class TestResolverRouter:
             mock_instance.resolved_packages = []
             mock_instance.num_solves = 1
 
-            response = client.post("/api/v1/resolver/resolve/advanced", json=resolve_request)
+            response = client.post(
+                "/api/v1/resolver/resolve/advanced", json=resolve_request
+            )
 
             assert response.status_code == 200
             data = response.json()
@@ -47,7 +49,9 @@ class TestResolverRouter:
             "packages": [],  # Empty packages list
         }
 
-        response = client.post("/api/v1/resolver/resolve/advanced", json=resolve_request)
+        response = client.post(
+            "/api/v1/resolver/resolve/advanced", json=resolve_request
+        )
 
         assert response.status_code == 422  # Validation error
 
@@ -62,7 +66,9 @@ class TestResolverRouter:
             # Mock package iteration
             mock_iter.return_value = []
 
-            response = client.post("/api/v1/resolver/dependency-graph", json=graph_request)
+            response = client.post(
+                "/api/v1/resolver/dependency-graph", json=graph_request
+            )
 
             assert response.status_code == 200
             data = response.json()
@@ -86,7 +92,9 @@ class TestResolverRouter:
             mock_instance.status.name = "failed"
             mock_instance.failure_description = "Version conflict"
 
-            response = client.get("/api/v1/resolver/conflicts?packages=python-2.7&packages=python-3.9")
+            response = client.get(
+                "/api/v1/resolver/conflicts?packages=python-2.7&packages=python-3.9"
+            )
 
             assert response.status_code == 200
             data = response.json()
@@ -137,7 +145,9 @@ class TestResolverRouter:
             # Mock an exception
             mock_context.side_effect = Exception("Package not found")
 
-            response = client.post("/api/v1/resolver/resolve/advanced", json=resolve_request)
+            response = client.post(
+                "/api/v1/resolver/resolve/advanced", json=resolve_request
+            )
 
             # Should return error response due to our error handling
             assert response.status_code == 500
@@ -153,7 +163,9 @@ class TestResolverRouter:
             # Mock an exception
             mock_iter.side_effect = Exception("Package repository error")
 
-            response = client.post("/api/v1/resolver/dependency-graph", json=graph_request)
+            response = client.post(
+                "/api/v1/resolver/dependency-graph", json=graph_request
+            )
 
             # Should return error response due to our error handling
             assert response.status_code == 500
