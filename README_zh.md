@@ -1,4 +1,4 @@
-# rez-proxy
+# Rez Proxy
 
 [![PyPI version](https://badge.fury.io/py/rez-proxy.svg)](https://badge.fury.io/py/rez-proxy)
 [![Python Support](https://img.shields.io/pypi/pyversions/rez-proxy.svg)](https://pypi.org/project/rez-proxy/)
@@ -64,7 +64,7 @@ API 将在 `http://localhost:8000` 可用，交互式文档在 `http://localhost
 
 ### 前置要求
 
-- Python 3.8+
+- Python 3.10+
 - Rez 包管理器
 - uv（推荐）或 pip
 
@@ -104,9 +104,9 @@ uvx nox -s pytest -- tests/test_api.py
 
 ```bash
 # 环境变量
-export REZ_PROXY_HOST=0.0.0.0
-export REZ_PROXY_PORT=8080
-export REZ_PROXY_LOG_LEVEL=info
+export REZ_PROXY_API_HOST=0.0.0.0
+export REZ_PROXY_API_PORT=8080
+export REZ_PROXY_API_LOG_LEVEL=info
 
 # 命令行
 uvx rez-proxy --host 0.0.0.0 --port 8080 --log-level debug
@@ -131,18 +131,6 @@ const packages = await rezApi.post('/packages/search', {
 const environment = await rezApi.post('/environments/resolve', {
   packages: ['python-3.9', 'requests']
 });
-```
-
-## 发布流程
-
-项目使用 GitHub Actions 自动发布到 PyPI：
-
-```bash
-# 创建发布标签
-git tag v1.0.0
-git push origin v1.0.0
-
-# GitHub Actions 将自动构建并发布到 PyPI
 ```
 
 ## 贡献
