@@ -38,6 +38,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Unreleased]: https://github.com/loonghao/rez-proxy/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/loonghao/rez-proxy/releases/tag/v1.0.0
 
+## v1.2.0 (2025-06-06)
+
+### Feat
+
+- add comprehensive error handling and Suite management API
+- add configurable API documentation URLs and update README
+- migrate from twine to uv publish for PyPI publishing
+
+### Fix
+
+- resolve lint issues in test files
+- update unit tests to match actual API implementations
+- resolve code quality issues and improve type safety
+- rebuild Python packages after GoReleaser cleans dist directory
+- clean up egg-info after build to prevent dirty git state
+- resolve GoReleaser dist directory conflict
+
+### Refactor
+
+- remove legacy CLI parameters for cleaner interface
+
 ## v1.1.6 (2025-06-06)
 
 ### Fix
