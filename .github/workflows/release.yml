@@ -49,4 +49,8 @@ jobs:
 
     - name: Publish to PyPI
       run: |
+        # GoReleaser builds files in dist/ directory
+        # Copy them to the expected location for uv publish
+        find dist/ -name "*.whl" -exec cp {} . \;
+        find dist/ -name "*.tar.gz" -exec cp {} . \;
         uv publish --trusted-publishing=always

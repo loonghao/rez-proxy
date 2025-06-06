@@ -53,7 +53,7 @@ async def get_shell_info(shell_name: str, request: Request) -> dict[str, Any]:
 
 
 @router.post("/{shell_name}/spawn")
-async def spawn_shell(shell_name: str, env_id: str):
+async def spawn_shell(shell_name: str, env_id: str) -> None:
     """Spawn a shell in the specified environment."""
     # This would require more complex implementation with WebSocket or similar
     # for interactive shell sessions

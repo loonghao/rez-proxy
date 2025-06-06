@@ -5,6 +5,7 @@ Environment API endpoints.
 import asyncio
 import uuid
 from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
@@ -19,10 +20,10 @@ from ..models.schemas import (
 router = APIRouter()
 
 # In-memory storage for environments (in production, use Redis or database)
-_environments: dict[str, dict] = {}
+_environments: dict[str, dict[str, Any]] = {}
 
 
-def _package_to_info(package) -> PackageInfo:
+def _package_to_info(package: Any) -> PackageInfo:
     """Convert Rez package to PackageInfo model."""
     return PackageInfo(
         name=package.name,
@@ -38,7 +39,7 @@ def _package_to_info(package) -> PackageInfo:
 
 
 @router.post("/resolve", response_model=EnvironmentInfo)
-async def resolve_environment(request: EnvironmentResolveRequest):
+async def resolve_environment(request: EnvironmentResolveRequest) -> EnvironmentInfo:
     """Resolve a new environment with specified packages."""
     try:
         from rez.resolved_context import ResolvedContext
@@ -94,7 +95,7 @@ async def resolve_environment(request: EnvironmentResolveRequest):
 
 
 @router.get("/{env_id}", response_model=EnvironmentInfo)
-async def get_environment(env_id: str):
+async def get_environment(env_id: str) -> EnvironmentInfo:
     """Get information about a specific environment."""
     if env_id not in _environments:
         raise HTTPException(status_code=404, detail=f"Environment '{env_id}' not found")
@@ -112,7 +113,9 @@ async def get_environment(env_id: str):
 
 
 @router.post("/{env_id}/execute", response_model=CommandExecuteResponse)
-async def execute_command(env_id: str, request: CommandExecuteRequest):
+async def execute_command(
+    env_id: str, request: CommandExecuteRequest
+) -> CommandExecuteResponse:
     """Execute a command in the specified environment."""
     if env_id not in _environments:
         raise HTTPException(status_code=404, detail=f"Environment '{env_id}' not found")
@@ -170,7 +173,7 @@ async def execute_command(env_id: str, request: CommandExecuteRequest):
 
 
 @router.delete("/{env_id}")
-async def delete_environment(env_id: str):
+async def delete_environment(env_id: str) -> dict[str, str]:
     """Delete an environment."""
     if env_id not in _environments:
         raise HTTPException(status_code=404, detail=f"Environment '{env_id}' not found")

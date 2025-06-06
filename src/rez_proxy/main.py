@@ -23,7 +23,7 @@ from rez_proxy.routers import (
 )
 
 
-def create_app() -> FastAPI:
+def create_app() -> VersionedFastAPI:
     """Create FastAPI application with versioning."""
 
     config = get_config()

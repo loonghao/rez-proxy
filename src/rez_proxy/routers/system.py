@@ -328,7 +328,7 @@ async def get_platform_info(
     try:
         context = get_current_context()
 
-        if is_remote_mode() and not context.platform_info:
+        if is_remote_mode() and context and not context.platform_info:
             # In remote mode, require platform info
             if not all([platform, arch, os, python_version]):
                 raise HTTPException(
@@ -384,9 +384,15 @@ async def set_platform_context(
             "context": {
                 "session_id": new_context.session_id,
                 "service_mode": new_context.service_mode.value,
-                "platform": new_context.platform_info.platform,
-                "arch": new_context.platform_info.arch,
-                "os": new_context.platform_info.os,
+                "platform": new_context.platform_info.platform
+                if new_context.platform_info
+                else None,
+                "arch": new_context.platform_info.arch
+                if new_context.platform_info
+                else None,
+                "os": new_context.platform_info.os
+                if new_context.platform_info
+                else None,
             },
         }
     except Exception as e:
@@ -409,7 +415,7 @@ async def get_current_platform_context(request: Request) -> dict[str, Any]:
                 "platform_info": None,
             }
 
-        result = {
+        result: dict[str, Any] = {
             "status": "active",
             "service_mode": context.service_mode.value,
             "client_id": context.client_id,
@@ -518,7 +524,7 @@ async def create_rez_config_template(
 
 @router.get("/health")
 @version(1)
-async def health_check():
+async def health_check() -> dict[str, str]:
     """Health check endpoint."""
     current_time = datetime.now().isoformat()
     uptime_seconds = time.time() - _server_start_time

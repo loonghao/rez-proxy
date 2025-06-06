@@ -48,7 +48,7 @@ class PackageService(PlatformAwareService):
             from rez.packages import iter_package_families, iter_packages
             from rez.version import Version
 
-            packages = []
+            packages: list[dict[str, Any]] = []
             count = 0
             total_count = 0
 
@@ -128,7 +128,7 @@ class PackageService(PlatformAwareService):
             "platform_compatible": None,
         }
 
-    def _package_to_dict(self, package) -> dict[str, Any]:
+    def _package_to_dict(self, package: Any) -> dict[str, Any]:
         """Convert Rez package to dictionary."""
         # Handle both Package and Variant objects
         if hasattr(package, "parent"):
@@ -189,7 +189,7 @@ class PackageService(PlatformAwareService):
 
         return package_info
 
-    def _is_variant_compatible(self, variant, platform: str) -> bool:
+    def _is_variant_compatible(self, variant: Any, platform: str) -> bool:
         """Check if variant is compatible with platform."""
         if not hasattr(variant, "index"):
             return True
@@ -198,7 +198,7 @@ class PackageService(PlatformAwareService):
         return platform in variant_index or "any" in variant_index.lower()
 
 
-def _package_to_info(package) -> PackageInfo:
+def _package_to_info(package: Any) -> PackageInfo:
     """Convert Rez package to PackageInfo model."""
     # Handle both Package and Variant objects
     if hasattr(package, "parent"):
@@ -344,7 +344,7 @@ async def get_package_versions(
         if is_local_mode():
             from rez.packages import iter_packages
 
-            versions = []
+            versions: list[dict[str, Any]] = []
             for package in iter_packages(package_name):
                 if len(versions) >= limit:
                     break
@@ -358,7 +358,7 @@ async def get_package_versions(
                 versions.append(version_info)
 
             # Sort by version (newest first)
-            versions.sort(key=lambda x: x["version"], reverse=True)
+            versions.sort(key=lambda x: str(x["version"]), reverse=True)
         else:
             # Remote mode placeholder
             versions = [
@@ -465,12 +465,12 @@ async def get_package_variants(
 
 
 @router.post("/search", response_model=PackageSearchResponse)
-async def search_packages(request: PackageSearchRequest):
+async def search_packages(request: PackageSearchRequest) -> PackageSearchResponse:
     """Search for packages."""
     try:
         from rez.packages import iter_package_families, iter_packages
 
-        packages = []
+        packages: list[PackageInfo] = []
         total_count = 0
 
         # Search through package families

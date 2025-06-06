@@ -2,6 +2,8 @@
 Advanced resolver API endpoints.
 """
 
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -40,7 +42,7 @@ class DependencyGraphRequest(BaseModel):
 
 
 @router.post("/resolve/advanced", response_model=ResolverResponse)
-async def advanced_resolve(request: ResolverRequest):
+async def advanced_resolve(request: ResolverRequest) -> ResolverResponse:
     """Perform advanced package resolution with detailed options."""
     try:
         import time
@@ -89,12 +91,14 @@ async def advanced_resolve(request: ResolverRequest):
 
 
 @router.post("/dependency-graph")
-async def get_dependency_graph(request: DependencyGraphRequest):
+async def get_dependency_graph(request: DependencyGraphRequest) -> dict[str, Any]:
     """Get dependency graph for packages."""
     try:
         from rez.packages import iter_packages
 
-        def get_dependencies(package_name, depth, visited=None):
+        def get_dependencies(
+            package_name: str, depth: int, visited: set[str] | None = None
+        ) -> dict[str, Any]:
             if visited is None:
                 visited = set()
 
@@ -137,7 +141,7 @@ async def get_dependency_graph(request: DependencyGraphRequest):
 
 
 @router.get("/conflicts")
-async def detect_conflicts(packages: list[str]):
+async def detect_conflicts(packages: list[str]) -> dict[str, Any]:
     """Detect potential conflicts between packages."""
     try:
         from rez.resolved_context import ResolvedContext
@@ -168,7 +172,7 @@ async def detect_conflicts(packages: list[str]):
 
 
 @router.post("/validate")
-async def validate_package_list(packages: list[str]):
+async def validate_package_list(packages: list[str]) -> dict[str, Any]:
     """Validate a list of package requirements."""
     try:
         from rez.version import Requirement

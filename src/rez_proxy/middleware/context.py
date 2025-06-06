@@ -4,6 +4,8 @@ Context middleware for rez-proxy.
 Handles client context detection and management for each request.
 """
 
+from collections.abc import Callable
+
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -14,7 +16,7 @@ from rez_proxy.models.schemas import ClientContext, PlatformInfo, ServiceMode
 class ContextMiddleware(BaseHTTPMiddleware):
     """Middleware to handle client context for each request."""
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Process request and set up context."""
         context_manager = get_context_manager()
 
@@ -29,7 +31,7 @@ class ContextMiddleware(BaseHTTPMiddleware):
 
         try:
             # Process the request
-            response = await call_next(request)
+            response: Response = await call_next(request)
 
             # Add context headers to response
             self._add_context_headers(response, client_context)

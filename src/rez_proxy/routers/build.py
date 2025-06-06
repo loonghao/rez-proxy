@@ -2,6 +2,8 @@
 Package build and release API endpoints.
 """
 
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi_versioning import version
 from pydantic import BaseModel
@@ -30,7 +32,7 @@ class ReleaseRequest(BaseModel):
 
 @router.post("/build")
 @version(1)
-async def build_package(request: BuildRequest):
+async def build_package(request: BuildRequest) -> dict[str, Any]:
     """Build a package from source."""
     try:
         import os
@@ -85,7 +87,7 @@ async def build_package(request: BuildRequest):
 
 @router.post("/release")
 @version(1)
-async def release_package(request: ReleaseRequest):
+async def release_package(request: ReleaseRequest) -> dict[str, Any]:
     """Release a package."""
     try:
         import os
@@ -133,7 +135,7 @@ async def release_package(request: ReleaseRequest):
 
 @router.get("/systems")
 @version(1)
-async def get_build_systems(request: Request):
+async def get_build_systems(request: Request) -> dict[str, Any]:
     """Get available build systems with platform awareness."""
     try:
         from ..core.context import get_current_context
@@ -154,7 +156,7 @@ async def get_build_systems(request: Request):
 
 
 @router.get("/status/{source_path:path}")
-async def get_build_status(source_path: str):
+async def get_build_status(source_path: str) -> dict[str, Any]:
     """Get build status for a package source."""
     try:
         import os
@@ -203,7 +205,7 @@ async def get_build_status(source_path: str):
 
 
 @router.get("/variants/{source_path:path}")
-async def get_package_variants(source_path: str):
+async def get_package_variants(source_path: str) -> dict[str, Any]:
     """Get variants information for a package."""
     try:
         import os
@@ -248,7 +250,7 @@ async def get_package_variants(source_path: str):
 
 
 @router.get("/dependencies/{source_path:path}")
-async def get_build_dependencies(source_path: str):
+async def get_build_dependencies(source_path: str) -> dict[str, Any]:
     """Get build dependencies for a package."""
     try:
         import os
