@@ -4,7 +4,7 @@ Shell API endpoints with context awareness.
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi_versioning import version
 
 from ..core.platform import ShellService
@@ -12,13 +12,50 @@ from ..core.platform import ShellService
 router = APIRouter()
 
 
+def _shell_to_info(shell_class) -> dict[str, Any]:
+    """Convert shell class to info dictionary."""
+    try:
+        info = {
+            "name": shell_class.name(),
+            "executable": getattr(shell_class, "executable", None),
+            "file_extension": shell_class.file_extension(),
+            "available": shell_class.is_available(),
+            "executable_path": None,
+            "description": getattr(shell_class, "__doc__", None),
+        }
+
+        try:
+            info["executable_path"] = shell_class.executable_filepath()
+        except Exception:
+            info["executable_path"] = None
+
+        return info
+    except Exception:
+        # Handle exceptions gracefully
+        return {
+            "name": getattr(shell_class, "executable", "unknown"),
+            "executable": getattr(shell_class, "executable", None),
+            "file_extension": ".sh",
+            "available": False,
+            "executable_path": None,
+            "description": None,
+        }
+
+
 @router.get("/")
 @version(1)
-async def list_shells(request: Request) -> dict[str, Any]:
+async def list_shells(
+    request: Request,
+    available_only: bool = Query(default=False, description="Filter to only available shells")
+) -> dict[str, Any]:
     """List available shells with platform awareness."""
     try:
         service = ShellService()
         shells = service.get_available_shells()
+
+        # Apply available_only filter if requested
+        if available_only:
+            shells = [shell for shell in shells if shell.get("available", False)]
 
         from ..core.context import get_current_context
 
@@ -48,6 +85,9 @@ async def get_shell_info(shell_name: str, request: Request) -> dict[str, Any]:
         shell_info["platform"] = service.get_platform_info().platform
 
         return shell_info
+    except HTTPException:
+        # Re-raise HTTPException (like 404) as-is
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get shell info: {e}")
 
