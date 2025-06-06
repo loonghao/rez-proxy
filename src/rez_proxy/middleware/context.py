@@ -85,7 +85,8 @@ class ContextMiddleware(BaseHTTPMiddleware):
         origin = request.headers.get("Origin", "")
 
         # Consider localhost, 127.0.0.1, and local IPs as local mode
-        local_indicators = ["localhost", "127.0.0.1", "0.0.0.0"]
+        # Note: 0.0.0.0 is included for development purposes only
+        local_indicators = ["localhost", "127.0.0.1", "0.0.0.0"]  # nosec B104
 
         if any(indicator in host for indicator in local_indicators):
             return ServiceMode.LOCAL

@@ -4,6 +4,7 @@ System API endpoints with context awareness.
 
 import platform
 import sys
+import tempfile
 import time
 from datetime import datetime
 from typing import Any
@@ -461,7 +462,7 @@ async def get_rez_configuration(request: Request) -> dict[str, Any]:
                 "release_packages_path": getattr(
                     config, "release_packages_path", ["/path/to/release"]
                 ),
-                "tmpdir": getattr(config, "tmpdir", "/tmp/rez"),
+                "tmpdir": getattr(config, "tmpdir", tempfile.gettempdir()),  # nosec B108
                 "default_shell": getattr(config, "default_shell", "bash"),
                 "plugin_path": getattr(config, "plugin_path", []),
                 "package_filter": getattr(config, "package_filter", []),
@@ -472,7 +473,7 @@ async def get_rez_configuration(request: Request) -> dict[str, Any]:
                 "packages_path": ["/path/to/packages"],
                 "local_packages_path": "/path/to/local",
                 "release_packages_path": ["/path/to/release"],
-                "tmpdir": "/tmp/rez",
+                "tmpdir": tempfile.gettempdir(),  # nosec B108
                 "default_shell": "bash",
                 "plugin_path": [],
                 "package_filter": [],
