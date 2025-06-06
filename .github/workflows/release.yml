@@ -38,6 +38,9 @@ jobs:
       with:
         version: "latest"
 
+    - name: Build Python packages
+      run: uv build
+
     - name: Run GoReleaser
       uses: goreleaser/goreleaser-action@v6
       with:

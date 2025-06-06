@@ -12,8 +12,6 @@ before:
     - uvx nox -s lint
     - uvx nox -s mypy
     - uvx nox -s pytest
-    # Build Python packages
-    - uv build
 
 builds:
   # Skip binary builds since we're only publishing Python packages
