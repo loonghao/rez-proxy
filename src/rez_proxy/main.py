@@ -2,12 +2,18 @@
 Rez Proxy - FastAPI application with versioning.
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi_versioning import VersionedFastAPI
 
 from rez_proxy.config import get_config
+from rez_proxy.exceptions import (
+    RezProxyException,
+    general_exception_handler,
+    http_exception_handler,
+    rez_proxy_exception_handler,
+)
 from rez_proxy.middleware.context import ContextMiddleware
 from rez_proxy.routers import (
     build,
@@ -18,6 +24,7 @@ from rez_proxy.routers import (
     resolver,
     rez_config,
     shells,
+    suites,
     system,
     versions,
 )
@@ -65,6 +72,7 @@ def create_app() -> VersionedFastAPI:
         package_ops.router, prefix="/package-ops", tags=["package-operations"]
     )
     app.include_router(build.router, prefix="/build", tags=["build"])
+    app.include_router(suites.router, prefix="/suites", tags=["suites"])
 
     # Create versioned app first
     versioned_app = VersionedFastAPI(
@@ -76,6 +84,11 @@ def create_app() -> VersionedFastAPI:
         docs_url=config.docs_url,
         redoc_url=config.redoc_url,
     )
+
+    # Register exception handlers
+    versioned_app.add_exception_handler(RezProxyException, rez_proxy_exception_handler)
+    versioned_app.add_exception_handler(HTTPException, http_exception_handler)
+    versioned_app.add_exception_handler(Exception, general_exception_handler)
 
     # Add non-versioned endpoints to the versioned app
     # Root path redirect to documentation
