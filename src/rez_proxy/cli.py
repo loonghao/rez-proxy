@@ -121,10 +121,15 @@ def main(
 
     # Create application (will be created by uvicorn factory)
 
+    # Get config for URLs
+    config = get_config()
+
     click.echo(f"🚀 Starting Rez Proxy on http://{host}:{port}")
-    click.echo(f"📖 API docs: http://{host}:{port}/docs")
-    click.echo(f"🔗 V1 API: http://{host}:{port}/api/v1/")
+    click.echo(f"📖 API docs: http://{host}:{port}{config.docs_url}")
+    click.echo(f"🔍 ReDoc docs: http://{host}:{port}{config.redoc_url}")
+    click.echo(f"🔗 V1 API: http://{host}:{port}{config.api_prefix}/")
     click.echo(f"🔗 Latest API: http://{host}:{port}/latest/")
+    click.echo(f"💡 API info: http://{host}:{port}/api/info")
     click.echo(f"🔄 Reload: {reload}")
 
     # Start server
