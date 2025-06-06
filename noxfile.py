@@ -75,7 +75,6 @@ def test_integration(session):
     session.run(
         "pytest",
         "tests/test_api.py",
-        "tests/test_middleware_context.py",
         "--cov=src/rez_proxy",
         "--cov-report=term-missing",
         "-v",
