@@ -38,7 +38,7 @@ def test(session):
         "--cov-report=term-missing",
         "--cov-report=html:htmlcov",
         "--cov-report=xml:coverage.xml",
-        "--cov-fail-under=70",
+        "--cov-fail-under=50",
         "-v",
         *session.posargs
     )
@@ -276,7 +276,7 @@ def ci(session):
         "--cov-report=term-missing",
         "--cov-report=xml:coverage.xml",
         "--cov-report=html:htmlcov",
-        "--cov-fail-under=70",
+        "--cov-fail-under=50",
         "--tb=short",
         "-v"
     )

@@ -161,3 +161,74 @@ class TestContextManagerIntegration:
         platform2 = cm.get_effective_platform_info()
         assert platform2 == remote_platform
         assert cm.is_remote_mode()
+
+    def test_clear_current_context(self):
+        """Test clearing current context."""
+        cm = ContextManager()
+
+        # Set a context
+        context = cm.create_context(
+            client_id="test-client", service_mode=ServiceMode.LOCAL
+        )
+        cm.set_current_context(context)
+        assert cm.get_current_context() is not None
+
+        # Clear context
+        cm.clear_current_context()
+        assert cm.get_current_context() is None
+
+    @patch("rez_proxy.core.context.ContextManager._detect_local_platform")
+    def test_detect_local_platform_caching(self, mock_detect):
+        """Test that local platform detection is cached."""
+        mock_platform = PlatformInfo(
+            platform="linux", arch="x86_64", os="ubuntu-20.04", python_version="3.9.0"
+        )
+        mock_detect.return_value = mock_platform
+
+        cm = ContextManager()
+
+        # Multiple calls should only detect once
+        result1 = cm.get_local_platform_info()
+        result2 = cm.get_local_platform_info()
+        result3 = cm.get_local_platform_info()
+
+        assert result1 == result2 == result3 == mock_platform
+        assert mock_detect.call_count == 1
+
+    def test_context_with_minimal_info(self):
+        """Test context creation with minimal information."""
+        cm = ContextManager()
+
+        context = cm.create_context(service_mode=ServiceMode.LOCAL)
+
+        assert context.service_mode == ServiceMode.LOCAL
+        assert context.request_id is not None
+        assert context.client_id is None
+        assert context.session_id is not None  # session_id is auto-generated
+        assert (
+            context.platform_info is not None
+        )  # platform_info is auto-detected in LOCAL mode
+
+    def test_context_with_all_info(self):
+        """Test context creation with all information."""
+        cm = ContextManager()
+
+        platform_info = PlatformInfo(
+            platform="linux", arch="x86_64", os="ubuntu-20.04", python_version="3.9.0"
+        )
+
+        context = cm.create_context(
+            client_id="test-client",
+            session_id="test-session",
+            platform_info=platform_info,
+            service_mode=ServiceMode.REMOTE,
+            user_agent="test-agent",
+            request_id="custom-request-id",
+        )
+
+        assert context.client_id == "test-client"
+        assert context.session_id == "test-session"
+        assert context.platform_info == platform_info
+        assert context.service_mode == ServiceMode.REMOTE
+        assert context.user_agent == "test-agent"
+        assert context.request_id == "custom-request-id"
