@@ -73,15 +73,15 @@ def create_app() -> VersionedFastAPI:
         prefix_format="/api/v{major}",
         default_version=(1, 0),
         enable_latest=True,
-        docs_url="/docs",
-        redoc_url="/redoc",
+        docs_url=config.docs_url,
+        redoc_url=config.redoc_url,
     )
 
     # Add non-versioned endpoints to the versioned app
     # Root path redirect to documentation
     @versioned_app.get("/", include_in_schema=False)
     async def root() -> RedirectResponse:
-        return RedirectResponse(url="/docs")
+        return RedirectResponse(url=config.docs_url)
 
     # Health check - non-versioned endpoint
     @versioned_app.get("/health", tags=["system"])
@@ -96,7 +96,9 @@ def create_app() -> VersionedFastAPI:
             "version": "0.0.1",
             "description": "RESTful API for Rez package manager",
             "api_version": "v1",
-            "docs_url": "/docs",
+            "docs_url": config.docs_url,
+            "redoc_url": config.redoc_url,
+            "api_prefix": config.api_prefix,
         }
 
     return versioned_app

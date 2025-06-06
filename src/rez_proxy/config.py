@@ -50,6 +50,11 @@ class RezProxyConfig(BaseSettings):
     enable_cache: bool = Field(default=True, description="Enable caching")
     cache_ttl: int = Field(default=300, description="Cache TTL in seconds")
 
+    # API configuration
+    api_prefix: str = Field(default="/api/v1", description="API prefix path")
+    docs_url: str = Field(default="/docs", description="Documentation URL")
+    redoc_url: str = Field(default="/redoc", description="ReDoc URL")
+
     # Security configuration
     api_key: str | None = Field(default=None, description="API key for authentication")
     max_concurrent_environments: int = Field(
