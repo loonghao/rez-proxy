@@ -38,6 +38,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Unreleased]: https://github.com/loonghao/rez-proxy/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/loonghao/rez-proxy/releases/tag/v1.0.0
 
+## v1.1.2 (2025-06-06)
+
+### Fix
+
+- add type annotations for mypy compliance
+- resolve unit test failures and adjust CI coverage threshold
+- remove problematic middleware test file and update noxfile
+- resolve mypy type annotation errors and remove problematic test files
+- resolve PyPI publishing and type annotation issues
+
 ## v1.1.1 (2025-06-06)
 
 ### Fix
