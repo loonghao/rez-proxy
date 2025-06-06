@@ -13,6 +13,42 @@ from rez_proxy.core.context import get_context_manager
 from rez_proxy.models.schemas import ClientContext, PlatformInfo, ServiceMode
 
 
+class EnvironmentManager:
+    """Manages environment information for requests."""
+
+    def get_environment(self) -> dict[str, str]:
+        """Get current environment information."""
+        import os
+
+        # Return relevant environment variables for rez-proxy
+        env_vars = {}
+
+        # Common environment variables that might be relevant
+        relevant_vars = [
+            "REZ_PACKAGES_PATH",
+            "REZ_LOCAL_PACKAGES_PATH",
+            "REZ_RELEASE_PACKAGES_PATH",
+            "REZ_CONFIG_FILE",
+            "REZ_TMPDIR",
+            "PATH",
+            "PYTHONPATH",
+            "HOME",
+            "USER",
+            "USERNAME",
+        ]
+
+        for var in relevant_vars:
+            value = os.environ.get(var)
+            if value is not None:
+                env_vars[var] = value
+
+        return env_vars
+
+
+# Global environment manager instance
+environment_manager = EnvironmentManager()
+
+
 class ContextMiddleware(BaseHTTPMiddleware):
     """Middleware to handle client context for each request."""
 

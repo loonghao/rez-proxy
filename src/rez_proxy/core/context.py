@@ -94,6 +94,10 @@ class ContextManager:
         """Set the current client context."""
         current_client_context.set(context)
 
+    def clear_current_context(self) -> None:
+        """Clear the current client context."""
+        current_client_context.set(None)
+
     def get_effective_platform_info(self) -> PlatformInfo:
         """Get effective platform information based on current context."""
         context = self.get_current_context()

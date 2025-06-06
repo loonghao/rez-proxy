@@ -66,17 +66,7 @@ def create_app() -> VersionedFastAPI:
     )
     app.include_router(build.router, prefix="/build", tags=["build"])
 
-    # Root path redirect to documentation
-    @app.get("/", include_in_schema=False)
-    async def root() -> RedirectResponse:
-        return RedirectResponse(url="/docs")
-
-    # Health check
-    @app.get("/health", tags=["system"])
-    async def health_check() -> dict[str, str]:
-        return {"status": "healthy", "service": "rez-proxy"}
-
-    # Create versioned app
+    # Create versioned app first
     versioned_app = VersionedFastAPI(
         app,
         version_format="{major}",
@@ -86,6 +76,28 @@ def create_app() -> VersionedFastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
     )
+
+    # Add non-versioned endpoints to the versioned app
+    # Root path redirect to documentation
+    @versioned_app.get("/", include_in_schema=False)
+    async def root() -> RedirectResponse:
+        return RedirectResponse(url="/docs")
+
+    # Health check - non-versioned endpoint
+    @versioned_app.get("/health", tags=["system"])
+    async def health_check() -> dict[str, str]:
+        return {"status": "healthy", "service": "rez-proxy"}
+
+    # API info endpoint - non-versioned
+    @versioned_app.get("/api/info", tags=["system"])
+    async def api_info() -> dict[str, str]:
+        return {
+            "name": "rez-proxy",
+            "version": "0.0.1",
+            "description": "RESTful API for Rez package manager",
+            "api_version": "v1",
+            "docs_url": "/docs",
+        }
 
     return versioned_app
 

@@ -38,3 +38,4 @@ dist/
 .egg-info/
 .shrimp-config.json/
 .ruff_cache/
+coverage.json
