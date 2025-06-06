@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Query
 router = APIRouter()
 
 
-def _repository_to_info(repo) -> dict[str, Any]:
+def _repository_to_info(repo: Any) -> dict[str, Any]:
     """Convert repository object to info dictionary."""
     # Handle both callable and attribute access for name
     repo_name = repo.name() if callable(repo.name) else repo.name
@@ -21,7 +21,7 @@ def _repository_to_info(repo) -> dict[str, Any]:
     }
 
 
-def _get_repository_stats(repo) -> dict[str, Any]:
+def _get_repository_stats(repo: Any) -> dict[str, Any]:
     """Get repository statistics."""
     package_count = len(list(repo.iter_packages()))
     # Handle both callable and attribute access for name
@@ -33,7 +33,9 @@ def _get_repository_stats(repo) -> dict[str, Any]:
     }
 
 
-def _search_repository_packages(repo, pattern: str, limit: int = 50) -> list[dict[str, Any]]:
+def _search_repository_packages(
+    repo: Any, pattern: str, limit: int = 50
+) -> list[dict[str, Any]]:
     """Search packages in repository by pattern."""
     packages = []
     count = 0
@@ -43,12 +45,14 @@ def _search_repository_packages(repo, pattern: str, limit: int = 50) -> list[dic
 
     for package in repo.iter_packages():
         if pattern.lower() in package.name.lower():
-            packages.append({
-                "name": package.name,
-                "version": str(package.version),
-                "repository": repo_name,
-                "uri": getattr(package, "uri", None),
-            })
+            packages.append(
+                {
+                    "name": package.name,
+                    "version": str(package.version),
+                    "repository": repo_name,
+                    "uri": getattr(package, "uri", None),
+                }
+            )
             count += 1
             if count >= limit:
                 break
@@ -56,7 +60,9 @@ def _search_repository_packages(repo, pattern: str, limit: int = 50) -> list[dic
     return packages
 
 
-def _filter_packages_by_pattern(packages: list[dict[str, Any]], pattern: str) -> list[dict[str, Any]]:
+def _filter_packages_by_pattern(
+    packages: list[dict[str, Any]], pattern: str
+) -> list[dict[str, Any]]:
     """Filter packages by name pattern using fnmatch."""
     return [pkg for pkg in packages if fnmatch.fnmatch(pkg["name"], pattern)]
 
@@ -73,7 +79,7 @@ async def list_repositories() -> dict[str, list[dict[str, Any]]]:
             repo_name = repo.name() if callable(repo.name) else repo.name
             # Handle uid attribute safely
             uid = getattr(repo, "uid", None)
-            if hasattr(uid, '__call__'):
+            if uid is not None and hasattr(uid, "__call__"):
                 try:
                     uid = uid()
                 except Exception:
@@ -189,7 +195,9 @@ async def get_repository_package(
 @router.get("/{repo_location:path}/packages")
 async def get_repository_packages(
     repo_location: str,
-    name_pattern: str = Query(default=None, description="Filter packages by name pattern"),
+    name_pattern: str = Query(
+        default=None, description="Filter packages by name pattern"
+    ),
     limit: int = Query(default=50, description="Maximum number of packages to return"),
     offset: int = Query(default=0, description="Number of packages to skip"),
 ) -> dict[str, Any]:
@@ -203,7 +211,7 @@ async def get_repository_packages(
                 status_code=404, detail=f"Repository '{repo_location}' not found"
             )
 
-        packages = []
+        packages: list[dict[str, Any]] = []
         count = 0
 
         for package in repo.iter_packages():
@@ -282,7 +290,7 @@ async def get_repository_info(repo_location: str) -> dict[str, Any]:
 
         # Handle uid attribute safely
         uid = getattr(repo, "uid", None)
-        if hasattr(uid, '__call__'):
+        if uid is not None and hasattr(uid, "__call__"):
             try:
                 uid = uid()
             except Exception:

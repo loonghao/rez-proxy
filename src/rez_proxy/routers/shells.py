@@ -12,7 +12,7 @@ from ..core.platform import ShellService
 router = APIRouter()
 
 
-def _shell_to_info(shell_class) -> dict[str, Any]:
+def _shell_to_info(shell_class: Any) -> dict[str, Any]:
     """Convert shell class to info dictionary."""
     try:
         info = {
@@ -46,7 +46,9 @@ def _shell_to_info(shell_class) -> dict[str, Any]:
 @version(1)
 async def list_shells(
     request: Request,
-    available_only: bool = Query(default=False, description="Filter to only available shells")
+    available_only: bool = Query(
+        default=False, description="Filter to only available shells"
+    ),
 ) -> dict[str, Any]:
     """List available shells with platform awareness."""
     try:

@@ -394,7 +394,11 @@ class TestRepositoriesRouter:
         mock_package3.version.__str__ = Mock(return_value="2023.0")
         mock_package3.uri = "/path/to/maya"
 
-        mock_repo.iter_packages.return_value = [mock_package1, mock_package2, mock_package3]
+        mock_repo.iter_packages.return_value = [
+            mock_package1,
+            mock_package2,
+            mock_package3,
+        ]
         mock_repo.iter_package_families.return_value = []
         mock_manager.get_repository.return_value = mock_repo
 
@@ -478,7 +482,7 @@ class TestRepositoriesRouter:
         search_data = {
             "query": "python",
             "repositories": ["local", "shared"],
-            "limit": 10
+            "limit": 10,
         }
 
         response = client.post("/api/v1/repositories/search", json=search_data)
@@ -528,10 +532,7 @@ class TestRepositoriesRouter:
         """Test searching with non-existent repository in list."""
         mock_manager.get_repository.return_value = None
 
-        search_data = {
-            "query": "python",
-            "repositories": ["nonexistent"]
-        }
+        search_data = {"query": "python", "repositories": ["nonexistent"]}
 
         response = client.post("/api/v1/repositories/search", json=search_data)
         assert response.status_code == 200
@@ -745,7 +746,11 @@ class TestRepositoryUtilities:
         mock_package3.version = Mock()
         mock_package3.version.__str__ = Mock(return_value="2023.0")
 
-        mock_repo.iter_packages.return_value = [mock_package1, mock_package2, mock_package3]
+        mock_repo.iter_packages.return_value = [
+            mock_package1,
+            mock_package2,
+            mock_package3,
+        ]
 
         # Test case-insensitive search
         results = _search_repository_packages(mock_repo, "py", limit=10)
