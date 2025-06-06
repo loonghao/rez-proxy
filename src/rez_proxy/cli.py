@@ -27,11 +27,7 @@ from rez_proxy.utils.rez_detector import detect_rez_installation
 @click.option("--rez-disable-home-config", is_flag=True, help="Disable Rez home config")
 @click.option("--rez-quiet", is_flag=True, help="Enable Rez quiet mode")
 @click.option("--rez-debug", is_flag=True, help="Enable Rez debug mode")
-# Legacy options for backward compatibility
-@click.option(
-    "--config-file", help="Legacy: Rez config file path (use --rez-config-file)"
-)
-@click.option("--packages-path", help="Legacy: packages path (use --rez-packages-path)")
+
 def main(
     host: str,
     port: int,
@@ -47,24 +43,13 @@ def main(
     rez_disable_home_config: bool,
     rez_quiet: bool,
     rez_debug: bool,
-    config_file: str | None,
-    packages_path: str | None,
 ) -> None:
     """
     Rez Proxy - RESTful API server for Rez package manager.
 
     Configure Rez environment through command line options or environment variables.
-    Environment variables use REZ_PROXY_ prefix (e.g., REZ_PROXY_REZ_CONFIG_FILE).
+    Environment variables use REZ_PROXY_API_ prefix (e.g., REZ_PROXY_API_REZ_CONFIG_FILE).
     """
-
-    # Handle legacy options
-    if config_file and not rez_config_file:
-        rez_config_file = config_file
-        click.echo("⚠️  --config-file is deprecated, use --rez-config-file")
-
-    if packages_path and not rez_packages_path:
-        rez_packages_path = packages_path
-        click.echo("⚠️  --packages-path is deprecated, use --rez-packages-path")
 
     # Set Rez configuration environment variables
     rez_config = {
