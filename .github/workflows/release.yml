@@ -39,7 +39,10 @@ jobs:
         version: "latest"
 
     - name: Build Python packages
-      run: uv build
+      run: |
+        uv build
+        # Clean up egg-info to avoid dirty git state
+        git checkout -- src/rez_proxy.egg-info/ || true
 
     - name: Run GoReleaser
       uses: goreleaser/goreleaser-action@v6
