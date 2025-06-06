@@ -142,17 +142,22 @@ async def execute_command(
             return_code = result.get("return_code", 0)
         except AttributeError:
             # Fallback to subprocess execution
-            import subprocess
+            import subprocess  # nosec B404
 
             # Get environment variables from context
             env_vars = context.get_environ()
 
-            process = subprocess.run(
+            # Validate command arguments to prevent injection
+            if not cmd_args or not all(isinstance(arg, str) for arg in cmd_args):
+                raise HTTPException(status_code=400, detail="Invalid command arguments")
+
+            process = subprocess.run(  # nosec B603
                 cmd_args,
                 capture_output=True,
                 text=True,
                 timeout=request.timeout,
                 env=env_vars,
+                shell=False,  # Explicitly disable shell to prevent injection
             )
             stdout = process.stdout
             stderr = process.stderr

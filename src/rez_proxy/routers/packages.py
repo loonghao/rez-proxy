@@ -68,8 +68,9 @@ class PackageService(PlatformAwareService):
                                     version_filter
                                 ):
                                     continue
-                            except Exception:
-                                continue
+                            except (ValueError, TypeError, AttributeError):
+                                # Skip packages with invalid version format
+                                continue  # nosec B112
 
                         # Apply offset
                         if count < offset:
@@ -84,8 +85,9 @@ class PackageService(PlatformAwareService):
                         packages.append(package_info)
                         count += 1
                         break  # Only get latest from each family
-                except Exception:
-                    continue
+                except (AttributeError, TypeError, ImportError):
+                    # Skip packages that can't be processed
+                    continue  # nosec B112
 
                 if len(packages) >= limit:
                     break
@@ -501,8 +503,9 @@ async def search_packages(request: PackageSearchRequest) -> PackageSearchRespons
 
                             if len(packages) >= request.limit:
                                 break
-                except Exception:
-                    continue  # Skip families that can't be iterated
+                except (AttributeError, TypeError, ImportError, OSError):
+                    # Skip families that can't be iterated due to filesystem or import issues
+                    continue  # nosec B112
 
             if len(packages) >= request.limit:
                 break

@@ -36,8 +36,9 @@ async def get_rez_config() -> dict[str, Any]:
                         value, str | int | float | bool | list | dict | type(None)
                     ):
                         config_dict[key] = value
-                except Exception:
-                    continue
+                except (AttributeError, TypeError, ValueError):
+                    # Skip config attributes that can't be serialized
+                    continue  # nosec B112
 
         return {"config": config_dict}
     except Exception as e:
