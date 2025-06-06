@@ -487,7 +487,9 @@ class TestPackageService:
     @patch("rez.packages.iter_package_families")
     @patch("rez.packages.iter_packages")
     @patch("rez.version.Version")
-    def test_list_packages_with_version_filter(self, mock_version, mock_iter_packages, mock_iter_families):
+    def test_list_packages_with_version_filter(
+        self, mock_version, mock_iter_packages, mock_iter_families
+    ):
         """Test PackageService.list_packages with version filter."""
         from rez_proxy.routers.packages import PackageService
 
@@ -513,7 +515,9 @@ class TestPackageService:
 
     @patch("rez.packages.iter_package_families")
     @patch("rez.packages.iter_packages")
-    def test_list_packages_with_invalid_version_filter(self, mock_iter_packages, mock_iter_families):
+    def test_list_packages_with_invalid_version_filter(
+        self, mock_iter_packages, mock_iter_families
+    ):
         """Test PackageService.list_packages with invalid version filter."""
         from rez_proxy.routers.packages import PackageService
 
@@ -538,7 +542,9 @@ class TestPackageService:
 
     @patch("rez.packages.iter_package_families")
     @patch("rez.packages.iter_packages")
-    def test_list_packages_with_offset_and_limit(self, mock_iter_packages, mock_iter_families):
+    def test_list_packages_with_offset_and_limit(
+        self, mock_iter_packages, mock_iter_families
+    ):
         """Test PackageService.list_packages with offset and limit."""
         from rez_proxy.routers.packages import PackageService
 
@@ -556,7 +562,9 @@ class TestPackageService:
             package = create_mock_package(name=f"package{i}", version="1.0.0")
             packages.append(package)
 
-        mock_iter_packages.side_effect = lambda name: [pkg for pkg in packages if pkg.name == name]
+        mock_iter_packages.side_effect = lambda name: [
+            pkg for pkg in packages if pkg.name == name
+        ]
 
         service = PackageService()
         result = service.list_packages(limit=2, offset=1)
