@@ -38,12 +38,6 @@ jobs:
       with:
         version: "latest"
 
-    - name: Build Python packages
-      run: |
-        uv build
-        # Clean up egg-info to avoid dirty git state
-        git checkout -- src/rez_proxy.egg-info/ || true
-
     - name: Run GoReleaser
       uses: goreleaser/goreleaser-action@v6
       with:
@@ -53,8 +47,14 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Build Python packages for PyPI
+      run: |
+        # GoReleaser cleans dist/ directory, so we need to rebuild Python packages
+        uv build
+        # Clean up egg-info to avoid dirty git state
+        git checkout -- src/rez_proxy.egg-info/ || true
+
     - name: Publish to PyPI
       run: |
-        # GoReleaser builds files in dist/ directory
         # uv publish looks for files in dist/ by default
         uv publish --trusted-publishing=always
