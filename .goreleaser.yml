@@ -12,19 +12,14 @@ before:
     - uvx nox -s lint
     - uvx nox -s mypy
     - uvx nox -s pytest
+    # Build Python packages
+    - uv build
 
 builds:
-  # Build wheel
-  - id: wheel
-    builder: uv
-    buildmode: wheel
-    dir: .
+  # Skip binary builds since we're only publishing Python packages
+  - skip: true
 
-  # Build source distribution
-  - id: sdist
-    builder: uv
-    buildmode: sdist
-    dir: .
+# PyPI publishing is handled by GitHub Actions using uv publish
 
 archives:
   - id: default
