@@ -7,6 +7,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from rez_proxy.exceptions import handle_rez_exception
+
 router = APIRouter()
 
 
@@ -87,7 +89,7 @@ async def advanced_resolve(request: ResolverRequest) -> ResolverResponse:
             graph_size=len(resolved_packages),
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to resolve packages: {e}")
+        handle_rez_exception(e, "advanced_package_resolution")
 
 
 @router.post("/dependency-graph")
@@ -135,9 +137,7 @@ async def get_dependency_graph(request: DependencyGraphRequest) -> dict[str, Any
 
         return {"dependency_graph": graph}
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get dependency graph: {e}"
-        )
+        handle_rez_exception(e, "dependency_graph_generation")
 
 
 @router.get("/conflicts")
@@ -168,7 +168,7 @@ async def detect_conflicts(packages: list[str]) -> dict[str, Any]:
             "resolution_status": context.status.name,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to detect conflicts: {e}")
+        handle_rez_exception(e, "conflict_detection")
 
 
 @router.post("/validate")
@@ -209,4 +209,4 @@ async def validate_package_list(packages: list[str]) -> dict[str, Any]:
             "results": validation_results,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to validate packages: {e}")
+        handle_rez_exception(e, "package_validation")

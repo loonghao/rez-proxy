@@ -67,6 +67,17 @@ The API will be available at:
 - `POST /api/v1/environments/resolve` - Resolve environment
 - `GET /api/v1/environments/{id}` - Get environment details
 - `POST /api/v1/environments/{id}/execute` - Execute command in environment
+- `DELETE /api/v1/environments/{id}` - Delete environment
+
+### Suite Management
+- `POST /api/v1/suites` - Create new suite
+- `GET /api/v1/suites` - List all suites
+- `GET /api/v1/suites/{id}` - Get suite details
+- `POST /api/v1/suites/{id}/contexts` - Add context to suite
+- `POST /api/v1/suites/{id}/tools/alias` - Alias tool in suite
+- `POST /api/v1/suites/{id}/save` - Save suite to disk
+- `GET /api/v1/suites/{id}/tools` - Get suite tools
+- `DELETE /api/v1/suites/{id}` - Delete suite
 
 ### System Operations
 - `GET /api/v1/system/status` - Get system status

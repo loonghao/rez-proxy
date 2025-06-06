@@ -9,6 +9,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
+from rez_proxy.exceptions import handle_rez_exception
 from ..models.schemas import (
     CommandExecuteRequest,
     CommandExecuteResponse,
@@ -89,9 +90,7 @@ async def resolve_environment(request: EnvironmentResolveRequest) -> Environment
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to resolve environment: {e}"
-        )
+        handle_rez_exception(e, "environment_resolution")
 
 
 @router.get("/{env_id}", response_model=EnvironmentInfo)
@@ -174,7 +173,7 @@ async def execute_command(
     except asyncio.TimeoutError:
         raise HTTPException(status_code=408, detail="Command execution timed out")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to execute command: {e}")
+        handle_rez_exception(e, "command_execution")
 
 
 @router.delete("/{env_id}")
