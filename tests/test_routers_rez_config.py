@@ -24,7 +24,10 @@ class TestRezConfigRouter:
         """Test getting complete Rez configuration."""
         with patch("rez.config.config") as mock_config:
             # Mock config object
-            mock_config._data = {"packages_path": ["/packages"], "local_packages_path": "/local"}
+            mock_config._data = {
+                "packages_path": ["/packages"],
+                "local_packages_path": "/local",
+            }
 
             response = client.get("/api/v1/config/")
 
@@ -70,8 +73,10 @@ class TestRezConfigRouter:
 
     def test_get_platform_info(self, client):
         """Test getting platform information."""
-        with patch("rez.config.config") as mock_config, \
-             patch("rez.system.system") as mock_system:
+        with (
+            patch("rez.config.config") as mock_config,
+            patch("rez.system.system") as mock_system,
+        ):
             # Mock config and system objects
             mock_config.platform = "linux"
             mock_config.arch = "x86_64"

@@ -22,9 +22,7 @@ class TestVersionsRouter:
 
     def test_parse_version(self, client):
         """Test parsing a version string."""
-        version_request = {
-            "version": "1.2.3"
-        }
+        version_request = {"version": "1.2.3"}
 
         with patch("rez.version.Version") as mock_version:
             # Mock version object
@@ -40,9 +38,7 @@ class TestVersionsRouter:
 
     def test_parse_version_invalid(self, client):
         """Test parsing an invalid version string."""
-        version_request = {
-            "version": "invalid.version"
-        }
+        version_request = {"version": "invalid.version"}
 
         with patch("rez.version.Version") as mock_version:
             # Mock version parsing failure
@@ -56,15 +52,11 @@ class TestVersionsRouter:
 
     def test_compare_versions(self, client):
         """Test comparing two versions."""
-        compare_request = {
-            "version1": "1.2.3",
-            "version2": "1.2.4"
-        }
+        compare_request = {"version1": "1.2.3", "version2": "1.2.4"}
 
         with patch("rez.version.Version") as mock_version:
             # Mock version objects
             mock_v1 = mock_version.return_value
-            mock_v2 = mock_version.return_value
             mock_v1.__lt__ = lambda self, other: True
             mock_v1.__eq__ = lambda self, other: False
             mock_v1.__gt__ = lambda self, other: False
@@ -80,10 +72,7 @@ class TestVersionsRouter:
 
     def test_compare_versions_error(self, client):
         """Test version comparison with error."""
-        compare_request = {
-            "version1": "invalid",
-            "version2": "1.2.3"
-        }
+        compare_request = {"version1": "invalid", "version2": "1.2.3"}
 
         with patch("rez.version.Version") as mock_version:
             # Mock version parsing failure
@@ -95,9 +84,7 @@ class TestVersionsRouter:
 
     def test_parse_requirement(self, client):
         """Test parsing a requirement string."""
-        requirement_request = {
-            "requirement": "python>=3.8"
-        }
+        requirement_request = {"requirement": "python>=3.8"}
 
         with patch("rez.version.Requirement") as mock_req:
             # Mock requirement object
@@ -105,7 +92,9 @@ class TestVersionsRouter:
             mock_instance.name = "python"
             mock_instance.range = ">=3.8"
 
-            response = client.post("/api/v1/versions/requirements/parse", json=requirement_request)
+            response = client.post(
+                "/api/v1/versions/requirements/parse", json=requirement_request
+            )
 
             assert response.status_code == 200
             data = response.json()
@@ -114,15 +103,15 @@ class TestVersionsRouter:
 
     def test_parse_requirement_invalid(self, client):
         """Test parsing an invalid requirement string."""
-        requirement_request = {
-            "requirement": "invalid-requirement"
-        }
+        requirement_request = {"requirement": "invalid-requirement"}
 
         with patch("rez.version.Requirement") as mock_req:
             # Mock requirement parsing failure
             mock_req.side_effect = Exception("Invalid requirement")
 
-            response = client.post("/api/v1/versions/requirements/parse", json=requirement_request)
+            response = client.post(
+                "/api/v1/versions/requirements/parse", json=requirement_request
+            )
 
             assert response.status_code == 200
             data = response.json()
@@ -130,15 +119,15 @@ class TestVersionsRouter:
 
     def test_check_requirement_satisfaction(self, client):
         """Test checking if version satisfies requirement."""
-        with patch("rez.version.Requirement") as mock_req, \
-             patch("rez.version.Version") as mock_version:
+        with patch("rez.version.Requirement") as mock_req, patch("rez.version.Version"):
             # Mock requirement and version objects
             mock_req_instance = mock_req.return_value
-            mock_version_instance = mock_version.return_value
             mock_req_instance.contains_version.return_value = True
 
-            response = client.post("/api/v1/versions/requirements/check", 
-                                 params={"requirement": "python>=3.8", "version": "3.9.0"})
+            response = client.post(
+                "/api/v1/versions/requirements/check",
+                params={"requirement": "python>=3.8", "version": "3.9.0"},
+            )
 
             assert response.status_code == 200
             data = response.json()
@@ -152,8 +141,10 @@ class TestVersionsRouter:
             # Mock requirement parsing failure
             mock_req.side_effect = Exception("Invalid requirement")
 
-            response = client.post("/api/v1/versions/requirements/check", 
-                                 params={"requirement": "invalid", "version": "1.0.0"})
+            response = client.post(
+                "/api/v1/versions/requirements/check",
+                params={"requirement": "invalid", "version": "1.0.0"},
+            )
 
             assert response.status_code == 400
 
@@ -163,7 +154,9 @@ class TestVersionsRouter:
             # Mock package iteration
             mock_iter.return_value = []
 
-            response = client.get("/api/v1/versions/latest?packages=python&packages=numpy&limit=5")
+            response = client.get(
+                "/api/v1/versions/latest?packages=python&packages=numpy&limit=5"
+            )
 
             assert response.status_code == 200
             data = response.json()
@@ -191,9 +184,7 @@ class TestVersionsRouter:
     def test_compare_versions_validation_error(self, client):
         """Test version comparison with validation error."""
         # Missing version2 field
-        compare_request = {
-            "version1": "1.2.3"
-        }
+        compare_request = {"version1": "1.2.3"}
 
         response = client.post("/api/v1/versions/compare", json=compare_request)
 
@@ -204,6 +195,8 @@ class TestVersionsRouter:
         # Missing requirement field
         requirement_request = {}
 
-        response = client.post("/api/v1/versions/requirements/parse", json=requirement_request)
+        response = client.post(
+            "/api/v1/versions/requirements/parse", json=requirement_request
+        )
 
         assert response.status_code == 422  # Validation error
