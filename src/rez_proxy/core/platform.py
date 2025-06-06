@@ -6,6 +6,8 @@ Provides platform-aware functionality that works in both local and remote modes.
 
 from typing import Any
 
+from fastapi import HTTPException
+
 from rez_proxy.core.context import get_effective_platform_info, is_local_mode
 from rez_proxy.models.schemas import PlatformInfo
 
@@ -124,7 +126,7 @@ class RezConfigService(PlatformAwareService):
 class ShellService(PlatformAwareService):
     """Platform-aware shell service."""
 
-    def get_available_shells(self) -> list[str]:
+    def get_available_shells(self) -> list[dict[str, Any]]:
         """Get available shells for current platform."""
         if is_local_mode():
             return self._get_local_shells()
@@ -132,26 +134,86 @@ class ShellService(PlatformAwareService):
             # In remote mode, return common shells for the platform
             return self._get_common_shells_for_platform()
 
-    def _get_local_shells(self) -> list[str]:
+    def _get_local_shells(self) -> list[dict[str, Any]]:
         """Get locally available shells."""
-        try:
-            from rez.shells import get_shell_types
+        from rez.shells import get_shell_types, get_shell_class
 
-            shell_types = get_shell_types()
-            return list(shell_types) if shell_types else []
-        except Exception:
-            return []
+        shell_types = get_shell_types()
+        shells = []
 
-    def _get_common_shells_for_platform(self) -> list[str]:
+        for shell_name in shell_types:
+            try:
+                shell_class = get_shell_class(shell_name)
+                shell_info = {
+                    "name": shell_class.name(),
+                    "executable": getattr(shell_class, "executable", None),
+                    "file_extension": getattr(
+                        shell_class, "file_extension", lambda: None
+                    )(),
+                    "available": shell_class.is_available(),
+                    "executable_path": None,
+                    "description": getattr(shell_class, "__doc__", None),
+                }
+
+                try:
+                    shell_info["executable_path"] = shell_class.executable_filepath()
+                except Exception:
+                    shell_info["executable_path"] = None
+
+                shells.append(shell_info)
+            except Exception:
+                # Add basic info for shells that can't be loaded
+                shells.append({
+                    "name": shell_name,
+                    "executable": shell_name,
+                    "file_extension": ".sh",
+                    "available": False,
+                    "executable_path": None,
+                    "description": None,
+                })
+
+        return shells
+
+    def _get_common_shells_for_platform(self) -> list[dict[str, Any]]:
         """Get common shells for current platform."""
         platform_info = self.get_platform_info()
 
+        shells = []
         if platform_info.platform == "windows":
-            return ["cmd", "powershell", "bash"]
+            shell_names = ["cmd", "powershell", "bash"]
         elif platform_info.platform in ["linux", "darwin"]:
-            return ["bash", "zsh", "sh", "csh", "tcsh"]
+            shell_names = ["bash", "zsh", "sh", "csh", "tcsh"]
         else:
-            return ["bash", "sh"]
+            shell_names = ["bash", "sh"]
+
+        for shell_name in shell_names:
+            shell_info = {
+                "name": shell_name,
+                "executable": shell_name,
+                "file_extension": ".sh",
+                "available": True,  # Assume available in remote mode
+                "executable_path": f"/bin/{shell_name}",
+                "description": f"{shell_name.upper()} shell",
+            }
+
+            # Platform-specific adjustments
+            if platform_info.platform == "windows":
+                if shell_name == "cmd":
+                    shell_info.update({
+                        "executable": "cmd.exe",
+                        "file_extension": ".bat",
+                        "executable_path": "C:\\Windows\\System32\\cmd.exe"
+                    })
+                elif shell_name == "powershell":
+                    shell_info.update({
+                        "executable": "powershell.exe",
+                        "file_extension": ".ps1",
+                        "executable_path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+                    })
+
+            shells.append(shell_info)
+
+        return shells
 
     def get_shell_info(self, shell_name: str) -> dict[str, Any]:
         """Get information about a specific shell."""
@@ -173,41 +235,33 @@ class ShellService(PlatformAwareService):
                 "file_extension": getattr(
                     shell_class, "file_extension", lambda: None
                 )(),
-                "is_available": shell_class.is_available(),
+                "available": shell_class.is_available(),
+                "executable_path": None,
+                "description": getattr(shell_class, "__doc__", None),
             }
 
             try:
-                info["executable_filepath"] = shell_class.executable_filepath()
+                info["executable_path"] = shell_class.executable_filepath()
             except Exception:
-                info["executable_filepath"] = None
+                info["executable_path"] = None
 
             return info
-        except Exception as e:
-            return {"error": str(e), "available": False}
+        except Exception:
+            # Return 404-like response for missing shells
+            raise HTTPException(status_code=404, detail=f"Shell '{shell_name}' not found")
 
     def _get_generic_shell_info(self, shell_name: str) -> dict[str, Any]:
         """Get generic shell information for remote mode."""
         platform_info = self.get_platform_info()
 
-        # Basic shell info based on platform
-        shell_info = {
-            "name": shell_name,
-            "platform": platform_info.platform,
-            "note": "Remote mode: actual availability depends on client system",
-        }
+        # Check if shell is in common shells list
+        common_shells = self._get_common_shells_for_platform()
+        for shell in common_shells:
+            if shell["name"] == shell_name:
+                return shell
 
-        # Add platform-specific defaults
-        if platform_info.platform == "windows":
-            if shell_name == "cmd":
-                shell_info.update({"executable": "cmd.exe", "file_extension": ".bat"})
-            elif shell_name == "powershell":
-                shell_info.update(
-                    {"executable": "powershell.exe", "file_extension": ".ps1"}
-                )
-        else:
-            shell_info.update({"executable": shell_name, "file_extension": ".sh"})
-
-        return shell_info
+        # If not found, raise 404
+        raise HTTPException(status_code=404, detail=f"Shell '{shell_name}' not found")
 
 
 class BuildSystemService(PlatformAwareService):

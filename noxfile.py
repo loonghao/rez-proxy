@@ -21,6 +21,8 @@ def pytest(session):
         "tests/test_cli.py",
         "tests/test_api.py",
         "tests/test_routers_system.py",  # Now fully working!
+        "tests/test_routers_repositories.py",  # Added for coverage improvement
+        "tests/test_routers_packages.py",  # Added for coverage improvement
         "tests/test_utils_rez_detector.py"  # 6 passed, 1 skipped
     ]
     session.run("pytest", *working_tests, "-v", *session.posargs)

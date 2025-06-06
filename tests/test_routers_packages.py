@@ -483,3 +483,132 @@ class TestPackageService:
         assert result["name"] == "python"
         assert "variants" in result
         assert len(result["variants"]) == 2
+
+    @patch("rez.packages.iter_package_families")
+    @patch("rez.packages.iter_packages")
+    @patch("rez.version.Version")
+    def test_list_packages_with_version_filter(self, mock_version, mock_iter_packages, mock_iter_families):
+        """Test PackageService.list_packages with version filter."""
+        from rez_proxy.routers.packages import PackageService
+
+        # Mock package family
+        mock_family = Mock()
+        mock_family.name = "python"
+        mock_iter_families.return_value = [mock_family]
+
+        # Mock package with version
+        mock_package = create_mock_package(version="3.9.0")
+        mock_iter_packages.return_value = [mock_package]
+
+        # Mock version comparison
+        mock_version_obj = Mock()
+        mock_version_obj.in_range.return_value = True
+        mock_version.return_value = mock_version_obj
+
+        service = PackageService()
+        result = service.list_packages(version_filter=">=3.8")
+
+        assert "packages" in result
+        assert len(result["packages"]) == 1
+
+    @patch("rez.packages.iter_package_families")
+    @patch("rez.packages.iter_packages")
+    def test_list_packages_with_invalid_version_filter(self, mock_iter_packages, mock_iter_families):
+        """Test PackageService.list_packages with invalid version filter."""
+        from rez_proxy.routers.packages import PackageService
+
+        # Mock package family
+        mock_family = Mock()
+        mock_family.name = "python"
+        mock_iter_families.return_value = [mock_family]
+
+        # Mock package with invalid version
+        mock_package = Mock()
+        mock_package.name = "python"
+        mock_package.version = Mock()
+        mock_package.version.__str__ = Mock(return_value="invalid-version")
+        mock_iter_packages.return_value = [mock_package]
+
+        service = PackageService()
+        result = service.list_packages(version_filter=">=3.8")
+
+        # Should skip packages with invalid versions
+        assert "packages" in result
+        assert len(result["packages"]) == 0
+
+    @patch("rez.packages.iter_package_families")
+    @patch("rez.packages.iter_packages")
+    def test_list_packages_with_offset_and_limit(self, mock_iter_packages, mock_iter_families):
+        """Test PackageService.list_packages with offset and limit."""
+        from rez_proxy.routers.packages import PackageService
+
+        # Mock multiple package families
+        families = []
+        for i in range(5):
+            family = Mock()
+            family.name = f"package{i}"
+            families.append(family)
+        mock_iter_families.return_value = families
+
+        # Mock packages
+        packages = []
+        for i in range(5):
+            package = create_mock_package(name=f"package{i}", version="1.0.0")
+            packages.append(package)
+
+        mock_iter_packages.side_effect = lambda name: [pkg for pkg in packages if pkg.name == name]
+
+        service = PackageService()
+        result = service.list_packages(limit=2, offset=1)
+
+        assert "packages" in result
+        assert len(result["packages"]) == 2
+        assert result["limit"] == 2
+        assert result["offset"] == 1
+
+    def test_package_to_dict_with_variant_object(self):
+        """Test PackageService._package_to_dict with variant object."""
+        from rez_proxy.routers.packages import PackageService
+
+        # Mock variant object (has parent attribute)
+        mock_parent = create_mock_package()
+        mock_variant = Mock()
+        mock_variant.parent = mock_parent
+        mock_variant.index = 0
+        mock_variant.subpath = "variants/0"
+
+        service = PackageService()
+        result = service._package_to_dict(mock_variant)
+
+        assert result["name"] == "python"
+        assert "variants" in result
+        assert result["variants"][0]["index"] == 0
+        assert result["variants"][0]["subpath"] == "variants/0"
+
+    def test_package_to_dict_with_requires_error(self):
+        """Test PackageService._package_to_dict with requires processing error."""
+        from rez_proxy.routers.packages import PackageService
+
+        # Mock package with problematic requires
+        mock_package = create_mock_package()
+        mock_package.requires = Mock(side_effect=TypeError("Cannot iterate"))
+
+        service = PackageService()
+        result = service._package_to_dict(mock_package)
+
+        assert result["name"] == "python"
+        assert result["requires"] == []  # Should fallback to empty list
+
+    def test_package_to_dict_with_tools_error(self):
+        """Test PackageService._package_to_dict with tools processing error."""
+        from rez_proxy.routers.packages import PackageService
+
+        # Mock package with problematic tools
+        mock_package = create_mock_package()
+        mock_package.tools = Mock(side_effect=TypeError("Cannot iterate"))
+
+        service = PackageService()
+        result = service._package_to_dict(mock_package)
+
+        assert result["name"] == "python"
+        assert result["tools"] == []  # Should fallback to empty list
