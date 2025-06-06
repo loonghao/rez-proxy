@@ -189,8 +189,8 @@ class PackageOpsService(PlatformAwareService):
                 return None
 
             # Simulate package validation
-            warnings = []
-            errors = []
+            warnings: list[str] = []
+            errors: list[str] = []
 
             # Check for common issues
             if not hasattr(package, "description") or not package.description:
