@@ -137,7 +137,8 @@ class ShellService(PlatformAwareService):
         try:
             from rez.shells import get_shell_types
 
-            return get_shell_types()
+            shell_types = get_shell_types()
+            return list(shell_types) if shell_types else []
         except Exception:
             return []
 

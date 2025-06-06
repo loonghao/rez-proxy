@@ -2,6 +2,8 @@
 Package operations API endpoints (copy, move, remove, etc.).
 """
 
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -34,7 +36,7 @@ class PackageRemoveRequest(BaseModel):
 
 
 @router.post("/copy")
-async def copy_package(request: PackageCopyRequest):
+async def copy_package(request: PackageCopyRequest) -> dict[str, Any]:
     """Copy a package to another repository."""
     try:
         from rez.package_copy import copy_package
@@ -66,7 +68,7 @@ async def copy_package(request: PackageCopyRequest):
 
 
 @router.post("/move")
-async def move_package(request: PackageMoveRequest):
+async def move_package(request: PackageMoveRequest) -> dict[str, Any]:
     """Move a package to another repository."""
     try:
         from rez.package_move import move_package
@@ -98,7 +100,7 @@ async def move_package(request: PackageMoveRequest):
 
 
 @router.delete("/remove")
-async def remove_package(request: PackageRemoveRequest):
+async def remove_package(request: PackageRemoveRequest) -> dict[str, Any]:
     """Remove a package or package version."""
     try:
         from rez.package_remove import remove_package, remove_package_family
@@ -149,7 +151,7 @@ async def remove_package(request: PackageRemoveRequest):
 
 
 @router.get("/uri/{package_uri:path}")
-async def get_package_from_uri(package_uri: str):
+async def get_package_from_uri(package_uri: str) -> dict[str, Any]:
     """Get package information from URI."""
     try:
         from rez.packages import get_package_from_uri
@@ -177,7 +179,7 @@ async def get_package_from_uri(package_uri: str):
 
 
 @router.get("/variant/{variant_uri:path}")
-async def get_variant_from_uri(variant_uri: str):
+async def get_variant_from_uri(variant_uri: str) -> dict[str, Any]:
     """Get variant information from URI."""
     try:
         from rez.packages import get_variant_from_uri
@@ -205,7 +207,9 @@ async def get_variant_from_uri(variant_uri: str):
 
 
 @router.get("/help/{package_name}")
-async def get_package_help(package_name: str, version: str | None = None):
+async def get_package_help(
+    package_name: str, version: str | None = None
+) -> dict[str, Any]:
     """Get help information for a package."""
     try:
         from rez.package_help import get_package_help
@@ -240,7 +244,9 @@ async def get_package_help(package_name: str, version: str | None = None):
 
 
 @router.get("/test/{package_name}")
-async def get_package_tests(package_name: str, version: str | None = None):
+async def get_package_tests(
+    package_name: str, version: str | None = None
+) -> dict[str, Any]:
     """Get test information for a package."""
     try:
         from rez.packages import get_package, iter_packages

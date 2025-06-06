@@ -2,13 +2,15 @@
 Package repository API endpoints.
 """
 
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, Query
 
 router = APIRouter()
 
 
 @router.get("/")
-async def list_repositories():
+async def list_repositories() -> dict[str, list[dict[str, Any]]]:
     """List all configured package repositories."""
     try:
         from rez.package_repository import package_repository_manager
@@ -29,7 +31,7 @@ async def list_repositories():
 
 
 @router.get("/{repo_location:path}")
-async def get_repository_info(repo_location: str):
+async def get_repository_info(repo_location: str) -> dict[str, Any]:
     """Get information about a specific repository."""
     try:
         from rez.package_repository import package_repository_manager
@@ -60,7 +62,7 @@ async def list_repository_families(
     repo_location: str,
     limit: int = Query(default=50, description="Maximum number of families to return"),
     offset: int = Query(default=0, description="Number of families to skip"),
-):
+) -> dict[str, Any]:
     """List package families in a specific repository."""
     try:
         from rez.package_repository import package_repository_manager
@@ -71,7 +73,7 @@ async def list_repository_families(
                 status_code=404, detail=f"Repository '{repo_location}' not found"
             )
 
-        families = []
+        families: list[dict[str, Any]] = []
         count = 0
 
         for family in repo.iter_package_families():
@@ -105,7 +107,9 @@ async def list_repository_families(
 
 
 @router.get("/{repo_location:path}/packages/{package_name}")
-async def get_repository_package(repo_location: str, package_name: str):
+async def get_repository_package(
+    repo_location: str, package_name: str
+) -> dict[str, Any]:
     """Get a specific package from a repository."""
     try:
         from rez.package_repository import package_repository_manager

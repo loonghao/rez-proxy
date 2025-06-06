@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: rez-proxy
-Version: 1.0.0
+Version: 1.1.1
 Summary: RESTful API proxy for Rez package manager
 Author-email: Hal <hal.long@outlook.com>
 License-Expression: MIT

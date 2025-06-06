@@ -56,7 +56,7 @@ class VersionCompareResponse(BaseModel):
 
 
 @router.post("/parse", response_model=VersionResponse)
-async def parse_version(request: VersionRequest):
+async def parse_version(request: VersionRequest) -> VersionResponse:
     """Parse a version string."""
     try:
         from rez.version import Version
@@ -77,7 +77,7 @@ async def parse_version(request: VersionRequest):
 
 
 @router.post("/compare", response_model=VersionCompareResponse)
-async def compare_versions(request: VersionCompareRequest):
+async def compare_versions(request: VersionCompareRequest) -> VersionCompareResponse:
     """Compare two versions."""
     try:
         from rez.version import Version
@@ -105,7 +105,7 @@ async def compare_versions(request: VersionCompareRequest):
 
 
 @router.post("/requirements/parse", response_model=RequirementResponse)
-async def parse_requirement(request: RequirementRequest):
+async def parse_requirement(request: RequirementRequest) -> RequirementResponse:
     """Parse a requirement string."""
     try:
         from rez.version import Requirement
@@ -131,7 +131,7 @@ async def parse_requirement(request: RequirementRequest):
 async def check_requirement_satisfaction(
     requirement: str,
     version: str,
-):
+) -> dict[str, str | bool]:
     """Check if a version satisfies a requirement."""
     try:
         from rez.version import Requirement, Version
@@ -154,7 +154,7 @@ async def check_requirement_satisfaction(
 async def get_latest_versions(
     packages: list[str],
     limit: int = 10,
-):
+) -> dict[str, dict[str, str | None]]:
     """Get latest versions of specified packages."""
     try:
         from rez.packages import iter_packages

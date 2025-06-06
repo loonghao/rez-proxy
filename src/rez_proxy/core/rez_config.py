@@ -18,17 +18,17 @@ class RezEnvironmentInfo:
     """Information about the current Rez environment."""
 
     config_file: str | None = None
-    packages_paths: list[str] = None
+    packages_paths: list[str] | None = None
     local_packages_path: str | None = None
-    release_packages_paths: list[str] = None
+    release_packages_paths: list[str] | None = None
     tmpdir: str | None = None
     cache_path: str | None = None
     home_config_disabled: bool = False
     quiet_mode: bool = False
     debug_mode: bool = False
-    environment_variables: dict[str, str] = None
+    environment_variables: dict[str, str] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.packages_paths is None:
             self.packages_paths = []
         if self.release_packages_paths is None:
@@ -40,7 +40,7 @@ class RezEnvironmentInfo:
 class RezConfigManager:
     """Manages Rez configuration for rez-proxy."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._config = get_config()
         self._environment_info: RezEnvironmentInfo | None = None
 
@@ -128,12 +128,13 @@ class RezConfigManager:
                 )
 
         # Check release packages paths
-        for path in env_info.release_packages_paths:
-            path_obj = Path(path)
-            if not path_obj.exists():
-                warnings.append(f"Release packages path does not exist: {path}")
-            elif not path_obj.is_dir():
-                warnings.append(f"Release packages path is not a directory: {path}")
+        if env_info.release_packages_paths:
+            for path in env_info.release_packages_paths:
+                path_obj = Path(path)
+                if not path_obj.exists():
+                    warnings.append(f"Release packages path does not exist: {path}")
+                elif not path_obj.is_dir():
+                    warnings.append(f"Release packages path is not a directory: {path}")
 
         # Check temporary directory
         if env_info.tmpdir:

@@ -20,7 +20,7 @@ class ConfigUpdateRequest(BaseModel):
 
 @router.get("/")
 @version(1)
-async def get_rez_config():
+async def get_rez_config() -> dict[str, Any]:
     """Get complete Rez configuration."""
     try:
         from rez.config import config
@@ -45,7 +45,7 @@ async def get_rez_config():
 
 
 @router.get("/key/{config_key}")
-async def get_config_value(config_key: str):
+async def get_config_value(config_key: str) -> dict[str, Any]:
     """Get a specific configuration value."""
     try:
         from rez.config import config
@@ -70,7 +70,7 @@ async def get_config_value(config_key: str):
 
 @router.get("/packages-path")
 @version(1)
-async def get_packages_paths():
+async def get_packages_paths() -> dict[str, Any]:
     """Get configured package paths."""
     try:
         from rez.config import config
@@ -89,7 +89,7 @@ async def get_packages_paths():
 
 
 @router.get("/platform-info")
-async def get_platform_info():
+async def get_platform_info() -> dict[str, Any]:
     """Get platform and system information."""
     try:
         from rez.config import config
@@ -109,7 +109,7 @@ async def get_platform_info():
 
 
 @router.get("/plugins")
-async def get_plugin_info():
+async def get_plugin_info() -> dict[str, Any]:
     """Get information about loaded plugins."""
     try:
         from rez.plugin_managers import plugin_manager
@@ -138,7 +138,7 @@ async def get_plugin_info():
 
 
 @router.get("/environment-vars")
-async def get_environment_variables():
+async def get_environment_variables() -> dict[str, Any]:
     """Get Rez-related environment variables."""
     try:
         import os
@@ -156,7 +156,7 @@ async def get_environment_variables():
 
 
 @router.get("/cache-info")
-async def get_cache_info():
+async def get_cache_info() -> dict[str, Any]:
     """Get package cache information."""
     try:
         from rez.config import config
@@ -180,7 +180,7 @@ async def get_cache_info():
 
 
 @router.get("/build-info")
-async def get_build_info():
+async def get_build_info() -> dict[str, Any]:
     """Get build system information."""
     try:
         from rez.config import config
@@ -200,42 +200,38 @@ async def get_build_info():
 
 
 @router.get("/validation")
-async def validate_config():
+async def validate_config() -> dict[str, Any]:
     """Validate current Rez configuration."""
     try:
         import os
 
         from rez.config import config
 
-        validation_results = {
+        validation_results: dict[str, Any] = {
             "valid": True,
             "warnings": [],
             "errors": [],
         }
+        warnings: list[str] = validation_results["warnings"]
+        errors: list[str] = validation_results["errors"]
 
         # Check packages paths
         packages_path = getattr(config, "packages_path", [])
         if not packages_path:
-            validation_results["warnings"].append("No packages_path configured")
+            warnings.append("No packages_path configured")
         else:
             for path in packages_path:
                 if not os.path.exists(path):
-                    validation_results["warnings"].append(
-                        f"Packages path does not exist: {path}"
-                    )
+                    warnings.append(f"Packages path does not exist: {path}")
                 elif not os.access(path, os.R_OK):
-                    validation_results["errors"].append(
-                        f"No read access to packages path: {path}"
-                    )
+                    errors.append(f"No read access to packages path: {path}")
 
         # Check local packages path
         local_path = getattr(config, "local_packages_path", None)
         if local_path and not os.path.exists(local_path):
-            validation_results["warnings"].append(
-                f"Local packages path does not exist: {local_path}"
-            )
+            warnings.append(f"Local packages path does not exist: {local_path}")
 
-        if validation_results["errors"]:
+        if errors:
             validation_results["valid"] = False
 
         return validation_results

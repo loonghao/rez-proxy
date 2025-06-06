@@ -33,23 +33,23 @@ from rez_proxy.utils.rez_detector import detect_rez_installation
 )
 @click.option("--packages-path", help="Legacy: packages path (use --rez-packages-path)")
 def main(
-    host,
-    port,
-    reload,
-    log_level,
-    workers,
-    rez_config_file,
-    rez_packages_path,
-    rez_local_packages_path,
-    rez_release_packages_path,
-    rez_tmpdir,
-    rez_cache_path,
-    rez_disable_home_config,
-    rez_quiet,
-    rez_debug,
-    config_file,
-    packages_path,
-):
+    host: str,
+    port: int,
+    reload: bool,
+    log_level: str,
+    workers: int,
+    rez_config_file: str | None,
+    rez_packages_path: str | None,
+    rez_local_packages_path: str | None,
+    rez_release_packages_path: str | None,
+    rez_tmpdir: str | None,
+    rez_cache_path: str | None,
+    rez_disable_home_config: bool,
+    rez_quiet: bool,
+    rez_debug: bool,
+    config_file: str | None,
+    packages_path: str | None,
+) -> None:
     """
     Rez Proxy - RESTful API server for Rez package manager.
 

@@ -108,7 +108,7 @@ class ContextManager:
     def is_remote_mode(self) -> bool:
         """Check if current context is in remote mode."""
         context = self.get_current_context()
-        return context and context.service_mode == ServiceMode.REMOTE
+        return context is not None and context.service_mode == ServiceMode.REMOTE
 
     def is_local_mode(self) -> bool:
         """Check if current context is in local mode."""
