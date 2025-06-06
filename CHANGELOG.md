@@ -38,6 +38,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Unreleased]: https://github.com/loonghao/rez-proxy/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/loonghao/rez-proxy/releases/tag/v1.0.0
 
+## v1.1.3 (2025-06-06)
+
+### Feat
+
+- migrate from twine to uv publish for PyPI publishing
+
 ## v1.1.2 (2025-06-06)
 
 ### Fix
