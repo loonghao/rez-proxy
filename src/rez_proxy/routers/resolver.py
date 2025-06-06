@@ -4,7 +4,7 @@ Advanced resolver API endpoints.
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 from rez_proxy.exceptions import handle_rez_exception

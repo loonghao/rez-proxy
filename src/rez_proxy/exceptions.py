@@ -2,20 +2,20 @@
 Custom exceptions and error handling for Rez Proxy.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, NoReturn
 
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
 
-class RezProxyException(Exception):
+class RezProxyError(Exception):
     """Base exception for Rez Proxy."""
 
     def __init__(
         self,
         message: str,
         error_code: str = "REZ_PROXY_ERROR",
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         self.message = message
         self.error_code = error_code
@@ -23,10 +23,10 @@ class RezProxyException(Exception):
         super().__init__(message)
 
 
-class RezConfigurationError(RezProxyException):
+class RezConfigurationError(RezProxyError):
     """Rez configuration related errors."""
 
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__(
             message=message,
             error_code="REZ_CONFIG_ERROR",
@@ -34,10 +34,15 @@ class RezConfigurationError(RezProxyException):
         )
 
 
-class RezPackageError(RezProxyException):
+class RezPackageError(RezProxyError):
     """Package related errors."""
 
-    def __init__(self, message: str, package_name: str = "", details: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self,
+        message: str,
+        package_name: str = "",
+        details: dict[str, Any] | None = None,
+    ):
         details = details or {}
         if package_name:
             details["package_name"] = package_name
@@ -48,10 +53,15 @@ class RezPackageError(RezProxyException):
         )
 
 
-class RezResolverError(RezProxyException):
+class RezResolverError(RezProxyError):
     """Resolver related errors."""
 
-    def __init__(self, message: str, packages: Optional[list] = None, details: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self,
+        message: str,
+        packages: list | None = None,
+        details: dict[str, Any] | None = None,
+    ):
         details = details or {}
         if packages:
             details["packages"] = packages
@@ -62,10 +72,10 @@ class RezResolverError(RezProxyException):
         )
 
 
-class RezEnvironmentError(RezProxyException):
+class RezEnvironmentError(RezProxyError):
     """Environment related errors."""
 
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__(
             message=message,
             error_code="REZ_ENVIRONMENT_ERROR",
@@ -77,7 +87,7 @@ def create_error_response(
     status_code: int,
     message: str,
     error_code: str = "UNKNOWN_ERROR",
-    details: Optional[Dict[str, Any]] = None,
+    details: dict[str, Any] | None = None,
 ) -> JSONResponse:
     """Create a standardized error response."""
     error_data = {
@@ -90,9 +100,9 @@ def create_error_response(
     return JSONResponse(status_code=status_code, content=error_data)
 
 
-def handle_rez_exception(e: Exception, context: str = "") -> HTTPException:
+def handle_rez_exception(e: Exception, context: str = "") -> NoReturn:
     """Convert Rez exceptions to appropriate HTTP exceptions with detailed error information."""
-    
+
     # Handle known Rez configuration errors
     if "Unrecognised package repository plugin" in str(e):
         plugin_name = str(e).split("'")[1] if "'" in str(e) else "unknown"
@@ -103,9 +113,9 @@ def handle_rez_exception(e: Exception, context: str = "") -> HTTPException:
                 "context": context,
                 "solution": "Check your Rez configuration file and ensure all repository plugins are properly installed",
                 "common_plugins": ["filesystem", "memory", "rezgui"],
-            }
+            },
         )
-    
+
     # Handle package not found errors
     if "No such package" in str(e) or "Package not found" in str(e):
         raise RezPackageError(
@@ -114,9 +124,9 @@ def handle_rez_exception(e: Exception, context: str = "") -> HTTPException:
                 "original_error": str(e),
                 "context": context,
                 "solution": "Check package name and version, ensure package exists in configured repositories",
-            }
+            },
         )
-    
+
     # Handle resolver errors
     if "resolve" in str(e).lower() or "conflict" in str(e).lower():
         raise RezResolverError(
@@ -125,9 +135,9 @@ def handle_rez_exception(e: Exception, context: str = "") -> HTTPException:
                 "original_error": str(e),
                 "context": context,
                 "solution": "Check package requirements and dependencies for conflicts",
-            }
+            },
         )
-    
+
     # Handle environment errors
     if "environment" in str(e).lower() or "context" in str(e).lower():
         raise RezEnvironmentError(
@@ -136,23 +146,25 @@ def handle_rez_exception(e: Exception, context: str = "") -> HTTPException:
                 "original_error": str(e),
                 "context": context,
                 "solution": "Check environment configuration and package availability",
-            }
+            },
         )
-    
+
     # Generic Rez error
-    raise RezProxyException(
+    raise RezProxyError(
         message=f"Rez operation failed: {str(e)}",
         error_code="REZ_OPERATION_ERROR",
         details={
             "original_error": str(e),
             "context": context,
             "type": type(e).__name__,
-        }
+        },
     )
 
 
-async def rez_proxy_exception_handler(request: Request, exc: RezProxyException) -> JSONResponse:
-    """Global exception handler for RezProxyException."""
+async def rez_proxy_exception_handler(
+    request: Request, exc: RezProxyError
+) -> JSONResponse:
+    """Global exception handler for RezProxyError."""
     return create_error_response(
         status_code=500,
         message=exc.message,

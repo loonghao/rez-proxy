@@ -9,7 +9,7 @@ from fastapi_versioning import VersionedFastAPI
 
 from rez_proxy.config import get_config
 from rez_proxy.exceptions import (
-    RezProxyException,
+    RezProxyError,
     general_exception_handler,
     http_exception_handler,
     rez_proxy_exception_handler,
@@ -86,7 +86,7 @@ def create_app() -> VersionedFastAPI:
     )
 
     # Register exception handlers
-    versioned_app.add_exception_handler(RezProxyException, rez_proxy_exception_handler)
+    versioned_app.add_exception_handler(RezProxyError, rez_proxy_exception_handler)
     versioned_app.add_exception_handler(HTTPException, http_exception_handler)
     versioned_app.add_exception_handler(Exception, general_exception_handler)
 
