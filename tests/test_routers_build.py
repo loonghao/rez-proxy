@@ -223,7 +223,9 @@ class TestBuildRouter:
             with patch(
                 "rez_proxy.core.rez_imports.rez_api.get_developer_package"
             ) as mock_get_dev_pkg:
-                with patch("rez_proxy.core.rez_imports.rez_api.create_release_from_path") as mock_release:
+                with patch(
+                    "rez_proxy.core.rez_imports.rez_api.create_release_from_path"
+                ) as mock_release:
                     # Mock developer package
                     mock_dev_pkg = MagicMock()
                     mock_dev_pkg.name = "test_package"

@@ -131,14 +131,16 @@ def main(
 
 # Configuration management commands
 @click.group()
-def config():
+def config() -> None:
     """Configuration management commands."""
     pass
 
 
 @config.command()
-@click.option("--file", "-f", default="config/rez_proxy.json", help="Configuration file path")
-def create_default(file):
+@click.option(
+    "--file", "-f", default="config/rez_proxy.json", help="Configuration file path"
+)
+def create_default(file: str) -> None:
     """Create a default configuration file."""
     from rez_proxy.utils.config_utils import create_default_config_file
 
@@ -152,7 +154,7 @@ def create_default(file):
 
 @config.command()
 @click.argument("file")
-def validate(file):
+def validate(file: str) -> None:
     """Validate a configuration file."""
     from rez_proxy.utils.config_utils import validate_config_file
 
@@ -180,7 +182,7 @@ def validate(file):
 @config.command()
 @click.argument("file")
 @click.option("--suffix", default=".backup", help="Backup file suffix")
-def backup(file, suffix):
+def backup(file: str, suffix: str) -> None:
     """Create a backup of a configuration file."""
     from rez_proxy.utils.config_utils import backup_config_file
 
@@ -195,7 +197,7 @@ def backup(file, suffix):
 @config.command()
 @click.argument("backup_file")
 @click.argument("target_file")
-def restore(backup_file, target_file):
+def restore(backup_file: str, target_file: str) -> None:
     """Restore configuration from backup."""
     from rez_proxy.utils.config_utils import restore_config_from_backup
 
@@ -210,7 +212,7 @@ def restore(backup_file, target_file):
 @config.command()
 @click.argument("file1")
 @click.argument("file2")
-def diff(file1, file2):
+def diff(file1: str, file2: str) -> None:
     """Show differences between two configuration files."""
     from rez_proxy.utils.config_utils import get_config_diff
 
@@ -232,7 +234,9 @@ def diff(file1, file2):
             for key, change in diff_result["changed"].items():
                 click.echo(f"   {key}: {change['old']} -> {change['new']}")
 
-        if not any([diff_result["added"], diff_result["removed"], diff_result["changed"]]):
+        if not any(
+            [diff_result["added"], diff_result["removed"], diff_result["changed"]]
+        ):
             click.echo("✅ No differences found")
 
     except Exception as e:
@@ -242,7 +246,7 @@ def diff(file1, file2):
 
 # Create a multi-command CLI
 @click.group()
-def cli():
+def cli() -> None:
     """Rez Proxy - RESTful API server for Rez package manager."""
     pass
 

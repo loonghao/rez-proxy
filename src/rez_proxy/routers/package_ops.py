@@ -10,7 +10,6 @@ from pydantic import BaseModel
 from rez_proxy.core.context import get_current_context, is_local_mode
 from rez_proxy.core.platform import PlatformAwareService
 from rez_proxy.core.web_compatibility import web_incompatible
-from rez_proxy.core.web_compatibility import web_incompatible
 
 router = APIRouter()
 
@@ -809,9 +808,9 @@ async def get_package_tests(
     alternatives=[
         "Use a local rez-proxy instance for package installation",
         "Set up a remote package management service",
-        "Use containerized environments for package management"
+        "Use containerized environments for package management",
     ],
-    documentation_url="/docs/web-environment-compatibility"
+    documentation_url="/docs/web-environment-compatibility",
 )
 async def install_package(request: PackageInstallRequest) -> dict[str, Any]:
     """Install a package."""
@@ -836,9 +835,9 @@ async def install_package(request: PackageInstallRequest) -> dict[str, Any]:
     alternatives=[
         "Use a local rez-proxy instance for package uninstallation",
         "Set up a remote package management service",
-        "Use containerized environments for package management"
+        "Use containerized environments for package management",
     ],
-    documentation_url="/docs/web-environment-compatibility"
+    documentation_url="/docs/web-environment-compatibility",
 )
 async def uninstall_package(package_name: str, version: str) -> dict[str, Any]:
     """Uninstall a package."""

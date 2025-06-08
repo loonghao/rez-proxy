@@ -3,7 +3,7 @@ Pydantic schemas for API requests and responses.
 """
 
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -133,5 +133,3 @@ class ClientContext(BaseModel):
     )
     user_agent: str | None = Field(None, description="Client user agent")
     request_id: str | None = Field(None, description="Request identifier for tracing")
-
-

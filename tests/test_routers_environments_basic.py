@@ -23,7 +23,9 @@ class TestEnvironmentResolve:
     @patch("rez.system.system")
     @patch("rez.resolver.ResolverStatus")
     @patch("rez.resolved_context.ResolvedContext")
-    def test_resolve_environment_success(self, mock_context_class, mock_status, mock_system, client):
+    def test_resolve_environment_success(
+        self, mock_context_class, mock_status, mock_system, client
+    ):
         """Test successful environment resolution."""
         # Setup mocks
         mock_context = MagicMock()
@@ -38,12 +40,10 @@ class TestEnvironmentResolve:
         mock_system.arch = "x86_64"
         mock_system.os = "linux"
 
-        request_data = {
-            "packages": ["test-package-1.0.0"]
-        }
+        request_data = {"packages": ["test-package-1.0.0"]}
 
         response = client.post("/api/v1/environments/resolve", json=request_data)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "id" in data
@@ -64,12 +64,10 @@ class TestEnvironmentResolve:
         mock_context.failure_description = "Package not found"
         mock_context_class.return_value = mock_context
 
-        request_data = {
-            "packages": ["nonexistent-package"]
-        }
+        request_data = {"packages": ["nonexistent-package"]}
 
         response = client.post("/api/v1/environments/resolve", json=request_data)
-        
+
         assert response.status_code == 400
         assert "Failed to resolve environment" in response.json()["detail"]
 
@@ -78,12 +76,10 @@ class TestEnvironmentResolve:
         """Test environment resolution with exception."""
         mock_context_class.side_effect = Exception("Rez error")
 
-        request_data = {
-            "packages": ["test-package"]
-        }
+        request_data = {"packages": ["test-package"]}
 
         response = client.post("/api/v1/environments/resolve", json=request_data)
-        
+
         assert response.status_code == 500
         data = response.json()
         assert "Rez operation failed" in data["detail"]
@@ -96,7 +92,7 @@ class TestEnvironmentInfo:
         """Test getting non-existent environment."""
         fake_id = str(uuid.uuid4())
         response = client.get(f"/api/v1/environments/{fake_id}")
-        
+
         assert response.status_code == 404
         assert f"Environment '{fake_id}' not found" in response.json()["detail"]
 
@@ -108,7 +104,7 @@ class TestEnvironmentDeletion:
         """Test deleting non-existent environment."""
         fake_id = str(uuid.uuid4())
         response = client.delete(f"/api/v1/environments/{fake_id}")
-        
+
         assert response.status_code == 404
         assert f"Environment '{fake_id}' not found" in response.json()["detail"]
 
@@ -119,14 +115,12 @@ class TestCommandExecution:
     def test_execute_command_environment_not_found(self, client):
         """Test command execution with non-existent environment."""
         fake_id = str(uuid.uuid4())
-        command_request = {
-            "command": "echo",
-            "args": ["test"],
-            "timeout": 30
-        }
-        
-        response = client.post(f"/api/v1/environments/{fake_id}/execute", json=command_request)
-        
+        command_request = {"command": "echo", "args": ["test"], "timeout": 30}
+
+        response = client.post(
+            f"/api/v1/environments/{fake_id}/execute", json=command_request
+        )
+
         assert response.status_code == 404
         assert f"Environment '{fake_id}' not found" in response.json()["detail"]
 
@@ -137,7 +131,7 @@ class TestPackageToInfo:
     def test_package_to_info_complete(self):
         """Test package conversion with all attributes."""
         from rez_proxy.routers.environments import _package_to_info
-        
+
         mock_pkg = MagicMock()
         mock_pkg.name = "test-package"
         mock_pkg.version = "1.0.0"
@@ -150,7 +144,7 @@ class TestPackageToInfo:
         mock_pkg.uri = "file:///test/path"
 
         result = _package_to_info(mock_pkg)
-        
+
         assert result.name == "test-package"
         assert result.version == "1.0.0"
         assert result.description == "Test package description"
@@ -164,7 +158,7 @@ class TestPackageToInfo:
     def test_package_to_info_minimal(self):
         """Test package conversion with minimal attributes."""
         from rez_proxy.routers.environments import _package_to_info
-        
+
         mock_pkg = MagicMock()
         mock_pkg.name = "minimal-package"
         mock_pkg.version = "0.1.0"
@@ -178,7 +172,7 @@ class TestPackageToInfo:
         del mock_pkg.uri
 
         result = _package_to_info(mock_pkg)
-        
+
         assert result.name == "minimal-package"
         assert result.version == "0.1.0"
         assert result.description is None
@@ -196,7 +190,9 @@ class TestEnvironmentWorkflow:
     @patch("rez.system.system")
     @patch("rez.resolver.ResolverStatus")
     @patch("rez.resolved_context.ResolvedContext")
-    def test_create_get_delete_workflow(self, mock_context_class, mock_status, mock_system, client):
+    def test_create_get_delete_workflow(
+        self, mock_context_class, mock_status, mock_system, client
+    ):
         """Test basic create -> get -> delete workflow."""
         # Setup mocks
         mock_context = MagicMock()
@@ -212,9 +208,9 @@ class TestEnvironmentWorkflow:
         mock_system.os = "linux"
 
         # 1. Create environment
-        create_response = client.post("/api/v1/environments/resolve", json={
-            "packages": ["python-3.9"]
-        })
+        create_response = client.post(
+            "/api/v1/environments/resolve", json={"packages": ["python-3.9"]}
+        )
         assert create_response.status_code == 200
         env_id = create_response.json()["id"]
 
@@ -238,7 +234,9 @@ class TestEnvironmentEdgeCases:
     @patch("rez.system.system")
     @patch("rez.resolver.ResolverStatus")
     @patch("rez.resolved_context.ResolvedContext")
-    def test_resolve_environment_missing_platform_attributes(self, mock_context_class, mock_status, mock_system, client):
+    def test_resolve_environment_missing_platform_attributes(
+        self, mock_context_class, mock_status, mock_system, client
+    ):
         """Test environment resolution when context lacks platform attributes."""
         # Setup mocks
         mock_context = MagicMock()
@@ -254,12 +252,10 @@ class TestEnvironmentEdgeCases:
         mock_system.arch = "AMD64"
         mock_system.os = "windows"
 
-        request_data = {
-            "packages": ["test-package"]
-        }
+        request_data = {"packages": ["test-package"]}
 
         response = client.post("/api/v1/environments/resolve", json=request_data)
-        
+
         assert response.status_code == 200
         data = response.json()
         # Should use system defaults
@@ -269,7 +265,9 @@ class TestEnvironmentEdgeCases:
 
     @patch("rez.resolver.ResolverStatus")
     @patch("rez.resolved_context.ResolvedContext")
-    def test_resolve_environment_empty_packages(self, mock_context_class, mock_status, client):
+    def test_resolve_environment_empty_packages(
+        self, mock_context_class, mock_status, client
+    ):
         """Test environment resolution with empty package list."""
         # Setup mocks
         mock_context = MagicMock()
@@ -281,12 +279,10 @@ class TestEnvironmentEdgeCases:
         mock_context.os = "linux"
         mock_context_class.return_value = mock_context
 
-        request_data = {
-            "packages": []
-        }
+        request_data = {"packages": []}
 
         response = client.post("/api/v1/environments/resolve", json=request_data)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert len(data["packages"]) == 0

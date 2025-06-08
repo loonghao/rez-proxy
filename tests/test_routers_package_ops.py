@@ -5,6 +5,7 @@ Test package operations router functionality.
 from unittest.mock import MagicMock, patch
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from rez_proxy.main import create_app
@@ -434,9 +435,10 @@ class TestPackageOpsService:
 
     def test_uninstall_package_local_mode_success(self, package_ops_service):
         """Test uninstalling package in local mode successfully."""
-        with patch("rez_proxy.core.context.is_local_mode") as mock_local, \
-             patch("rez.packages.get_package") as mock_get_package:
-
+        with (
+            patch("rez_proxy.core.context.is_local_mode") as mock_local,
+            patch("rez.packages.get_package") as mock_get_package,
+        ):
             mock_local.return_value = True
             mock_package = MagicMock()
             mock_get_package.return_value = mock_package
@@ -449,9 +451,10 @@ class TestPackageOpsService:
 
     def test_uninstall_package_local_mode_not_found(self, package_ops_service):
         """Test uninstalling non-existent package in local mode."""
-        with patch("rez_proxy.core.context.is_local_mode") as mock_local, \
-             patch("rez.packages.get_package") as mock_get_package:
-
+        with (
+            patch("rez_proxy.core.context.is_local_mode") as mock_local,
+            patch("rez.packages.get_package") as mock_get_package,
+        ):
             mock_local.return_value = True
             mock_get_package.return_value = None
 
@@ -473,9 +476,10 @@ class TestPackageOpsService:
         """Test updating package in local mode successfully."""
         request = {"target_version": "3.10.0"}
 
-        with patch("rez_proxy.core.context.is_local_mode") as mock_local, \
-             patch("rez.packages.iter_packages") as mock_iter:
-
+        with (
+            patch("rez_proxy.core.context.is_local_mode") as mock_local,
+            patch("rez.packages.iter_packages") as mock_iter,
+        ):
             mock_local.return_value = True
             mock_package = MagicMock()
             mock_package.version = "3.9.0"
@@ -492,9 +496,10 @@ class TestPackageOpsService:
         """Test updating non-existent package in local mode."""
         request = {"target_version": "1.0.0"}
 
-        with patch("rez_proxy.core.context.is_local_mode") as mock_local, \
-             patch("rez.packages.iter_packages") as mock_iter:
-
+        with (
+            patch("rez_proxy.core.context.is_local_mode") as mock_local,
+            patch("rez.packages.iter_packages") as mock_iter,
+        ):
             mock_local.return_value = True
             mock_iter.return_value = []
 
@@ -504,9 +509,10 @@ class TestPackageOpsService:
 
     def test_validate_package_local_mode_success(self, package_ops_service):
         """Test validating package in local mode successfully."""
-        with patch("rez_proxy.core.context.is_local_mode") as mock_local, \
-             patch("rez.packages.get_package") as mock_get_package:
-
+        with (
+            patch("rez_proxy.core.context.is_local_mode") as mock_local,
+            patch("rez.packages.get_package") as mock_get_package,
+        ):
             mock_local.return_value = True
             mock_package = MagicMock()
             mock_package.description = "Test package"
@@ -522,9 +528,10 @@ class TestPackageOpsService:
 
     def test_validate_package_local_mode_with_warnings(self, package_ops_service):
         """Test validating package with warnings in local mode."""
-        with patch("rez_proxy.core.context.is_local_mode") as mock_local, \
-             patch("rez.packages.get_package") as mock_get_package:
-
+        with (
+            patch("rez_proxy.core.context.is_local_mode") as mock_local,
+            patch("rez.packages.get_package") as mock_get_package,
+        ):
             mock_local.return_value = True
             mock_package = MagicMock()
             mock_package.description = None
@@ -546,9 +553,10 @@ class TestPackageOpsService:
             "verify_dependencies": True,
         }
 
-        with patch("rez_proxy.core.context.is_local_mode") as mock_local, \
-             patch("rez.packages.get_package") as mock_get_package:
-
+        with (
+            patch("rez_proxy.core.context.is_local_mode") as mock_local,
+            patch("rez.packages.get_package") as mock_get_package,
+        ):
             mock_local.return_value = True
             mock_package = MagicMock()
             mock_get_package.return_value = mock_package
@@ -622,8 +630,6 @@ class TestPackageOpsService:
         assert result is None
 
 
-
-
 class TestPackageOpsIntegration:
     """Test package operations integration scenarios."""
 
@@ -635,9 +641,10 @@ class TestPackageOpsIntegration:
             "version": "1.0.0",
         }
 
-        with patch("rez_proxy.core.context.is_local_mode") as mock_local, \
-             patch("rez.packages.get_package") as mock_get_package:
-
+        with (
+            patch("rez_proxy.core.context.is_local_mode") as mock_local,
+            patch("rez.packages.get_package") as mock_get_package,
+        ):
             mock_local.return_value = True
             mock_package = MagicMock()
             mock_package.description = "Test package"
@@ -649,12 +656,16 @@ class TestPackageOpsIntegration:
             assert install_result["status"] == "success"
 
             # 2. Validate installed package
-            validate_result = package_ops_service.validate_package("test-package", "1.0.0")
+            validate_result = package_ops_service.validate_package(
+                "test-package", "1.0.0"
+            )
             assert validate_result["valid"] is True
 
             # 3. Repair package if needed
             repair_request = {"fix_permissions": True}
-            repair_result = package_ops_service.repair_package("test-package", "1.0.0", repair_request)
+            repair_result = package_ops_service.repair_package(
+                "test-package", "1.0.0", repair_request
+            )
             assert repair_result["status"] == "success"
 
     def test_local_vs_remote_mode_consistency(self, package_ops_service):
@@ -682,9 +693,10 @@ class TestPackageOpsIntegration:
 
     def test_error_propagation(self, package_ops_service):
         """Test error propagation through service methods."""
-        with patch("rez_proxy.core.context.is_local_mode") as mock_local, \
-             patch("rez.packages.get_package") as mock_get_package:
-
+        with (
+            patch("rez_proxy.core.context.is_local_mode") as mock_local,
+            patch("rez.packages.get_package") as mock_get_package,
+        ):
             mock_local.return_value = True
             mock_get_package.side_effect = Exception("Database error")
 

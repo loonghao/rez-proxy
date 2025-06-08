@@ -2,7 +2,7 @@
 Test resolver router functionality.
 """
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -68,7 +68,10 @@ class TestResolverRouter:
         mock_rez_context.resolved_packages = [mock_rez_package]
         mock_rez_context.status.name = "solved"
 
-        with patch("rez_proxy.core.rez_imports.rez_api.create_resolved_context", return_value=mock_rez_context):
+        with patch(
+            "rez_proxy.core.rez_imports.rez_api.create_resolved_context",
+            return_value=mock_rez_context,
+        ):
             response = client.post(
                 "/api/v1/resolver/resolve/advanced", json=resolve_request
             )
@@ -94,7 +97,10 @@ class TestResolverRouter:
         mock_rez_context.resolved_packages = []
         mock_rez_context.failed_packages = ["conflicting-package-1"]
 
-        with patch("rez_proxy.core.rez_imports.rez_api.create_resolved_context", return_value=mock_rez_context):
+        with patch(
+            "rez_proxy.core.rez_imports.rez_api.create_resolved_context",
+            return_value=mock_rez_context,
+        ):
             response = client.post(
                 "/api/v1/resolver/resolve/advanced", json=resolve_request
             )
@@ -123,7 +129,10 @@ class TestResolverRouter:
             "packages": ["python-3.9"],
         }
 
-        with patch("rez_proxy.core.rez_imports.rez_api.create_resolved_context", side_effect=AttributeError("API not available")):
+        with patch(
+            "rez_proxy.core.rez_imports.rez_api.create_resolved_context",
+            side_effect=AttributeError("API not available"),
+        ):
             response = client.post(
                 "/api/v1/resolver/resolve/advanced", json=resolve_request
             )
@@ -137,7 +146,10 @@ class TestResolverRouter:
             "packages": ["invalid-package"],
         }
 
-        with patch("rez_proxy.core.rez_imports.rez_api.create_resolved_context", side_effect=Exception("Context creation failed")):
+        with patch(
+            "rez_proxy.core.rez_imports.rez_api.create_resolved_context",
+            side_effect=Exception("Context creation failed"),
+        ):
             response = client.post(
                 "/api/v1/resolver/resolve/advanced", json=resolve_request
             )
@@ -212,7 +224,9 @@ class TestResolverRouter:
         }
 
         with patch("rez_proxy.routers.resolver.rez_api") as mock_api:
-            mock_api.iter_packages = MagicMock(side_effect=AttributeError("API not available"))
+            mock_api.iter_packages = MagicMock(
+                side_effect=AttributeError("API not available")
+            )
 
             response = client.post(
                 "/api/v1/resolver/dependency-graph", json=graph_request
@@ -243,10 +257,13 @@ class TestResolverRouter:
         """Test conflict detection with no conflicts."""
         mock_rez_context.status.name = "solved"
 
-        with patch("rez_proxy.core.rez_imports.rez_api.create_resolved_context", return_value=mock_rez_context):
+        with patch(
+            "rez_proxy.core.rez_imports.rez_api.create_resolved_context",
+            return_value=mock_rez_context,
+        ):
             response = client.get(
                 "/api/v1/resolver/conflicts",
-                params={"packages": ["python-3.9", "numpy-1.20"]}
+                params={"packages": ["python-3.9", "numpy-1.20"]},
             )
 
             assert response.status_code == 200
@@ -260,10 +277,13 @@ class TestResolverRouter:
         mock_rez_context.status.name = "failed"
         mock_rez_context.failure_description = "Version conflict between packages"
 
-        with patch("rez_proxy.core.rez_imports.rez_api.create_resolved_context", return_value=mock_rez_context):
+        with patch(
+            "rez_proxy.core.rez_imports.rez_api.create_resolved_context",
+            return_value=mock_rez_context,
+        ):
             response = client.get(
                 "/api/v1/resolver/conflicts",
-                params={"packages": ["python-2.7", "python-3.9"]}
+                params={"packages": ["python-2.7", "python-3.9"]},
             )
 
             assert response.status_code == 200
@@ -276,10 +296,12 @@ class TestResolverRouter:
 
     def test_detect_conflicts_rez_api_not_available(self, client):
         """Test conflict detection when Rez API is not available."""
-        with patch("rez_proxy.core.rez_imports.rez_api.create_resolved_context", side_effect=AttributeError("API not available")):
+        with patch(
+            "rez_proxy.core.rez_imports.rez_api.create_resolved_context",
+            side_effect=AttributeError("API not available"),
+        ):
             response = client.get(
-                "/api/v1/resolver/conflicts",
-                params={"packages": ["python-3.9"]}
+                "/api/v1/resolver/conflicts", params={"packages": ["python-3.9"]}
             )
 
             assert response.status_code == 500
@@ -287,10 +309,12 @@ class TestResolverRouter:
 
     def test_detect_conflicts_context_creation_error(self, client):
         """Test conflict detection when context creation fails."""
-        with patch("rez_proxy.core.rez_imports.rez_api.create_resolved_context", side_effect=Exception("Context error")):
+        with patch(
+            "rez_proxy.core.rez_imports.rez_api.create_resolved_context",
+            side_effect=Exception("Context error"),
+        ):
             response = client.get(
-                "/api/v1/resolver/conflicts",
-                params={"packages": ["invalid-package"]}
+                "/api/v1/resolver/conflicts", params={"packages": ["invalid-package"]}
             )
 
             assert response.status_code == 400
@@ -300,7 +324,10 @@ class TestResolverRouter:
         """Test successful package list validation."""
         packages = ["python-3.9", "numpy>=1.20"]
 
-        with patch("rez_proxy.core.rez_imports.rez_api.create_requirement", return_value=mock_rez_requirement):
+        with patch(
+            "rez_proxy.core.rez_imports.rez_api.create_requirement",
+            return_value=mock_rez_requirement,
+        ):
             response = client.post("/api/v1/resolver/validate", json=packages)
 
             assert response.status_code == 200
@@ -315,7 +342,10 @@ class TestResolverRouter:
         """Test package list validation with invalid packages."""
         packages = ["invalid-package-spec"]
 
-        with patch("rez_proxy.core.rez_imports.rez_api.create_requirement", side_effect=Exception("Invalid requirement")):
+        with patch(
+            "rez_proxy.core.rez_imports.rez_api.create_requirement",
+            side_effect=Exception("Invalid requirement"),
+        ):
             response = client.post("/api/v1/resolver/validate", json=packages)
 
             assert response.status_code == 200
@@ -332,7 +362,10 @@ class TestResolverRouter:
         """Test package validation when Rez API is not available."""
         packages = ["python-3.9"]
 
-        with patch("rez_proxy.core.rez_imports.rez_api.create_requirement", side_effect=AttributeError("API not available")):
+        with patch(
+            "rez_proxy.core.rez_imports.rez_api.create_requirement",
+            side_effect=AttributeError("API not available"),
+        ):
             response = client.post("/api/v1/resolver/validate", json=packages)
 
             assert response.status_code == 200
@@ -349,7 +382,10 @@ class TestResolverRouter:
                 raise Exception("Invalid package specification")
             return mock_rez_requirement
 
-        with patch("rez_proxy.core.rez_imports.rez_api.create_requirement", side_effect=mock_create_requirement):
+        with patch(
+            "rez_proxy.core.rez_imports.rez_api.create_requirement",
+            side_effect=mock_create_requirement,
+        ):
             response = client.post("/api/v1/resolver/validate", json=packages)
 
             assert response.status_code == 200
@@ -364,7 +400,10 @@ class TestResolverRouter:
         """Test package validation with general system error."""
         packages = ["test-package"]
 
-        with patch("rez_proxy.core.rez_imports.rez_api.create_requirement", side_effect=RuntimeError("System error")):
+        with patch(
+            "rez_proxy.core.rez_imports.rez_api.create_requirement",
+            side_effect=RuntimeError("System error"),
+        ):
             response = client.post("/api/v1/resolver/validate", json=packages)
 
             assert response.status_code == 500
@@ -382,7 +421,10 @@ class TestResolverRouter:
         mock_context.failed_packages = []
         mock_context.num_solves = 0
 
-        with patch("rez_proxy.core.rez_imports.rez_api.create_resolved_context", return_value=mock_context):
+        with patch(
+            "rez_proxy.core.rez_imports.rez_api.create_resolved_context",
+            return_value=mock_context,
+        ):
             response = client.post(
                 "/api/v1/resolver/resolve/advanced", json=resolve_request
             )
@@ -403,7 +445,10 @@ class TestResolverRouter:
         mock_context.failed_packages = []
         mock_context.num_solves = 1
 
-        with patch("rez_proxy.core.rez_imports.rez_api.create_resolved_context", return_value=mock_context):
+        with patch(
+            "rez_proxy.core.rez_imports.rez_api.create_resolved_context",
+            return_value=mock_context,
+        ):
             response = client.post(
                 "/api/v1/resolver/resolve/advanced", json=resolve_request
             )

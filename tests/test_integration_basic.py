@@ -64,7 +64,9 @@ class TestBasicIntegration:
     def test_repositories_list(self, client):
         """Test repositories listing."""
         with patch("rez_proxy.core.context.get_current_context", return_value=None):
-            with patch("rez.package_repository.package_repository_manager") as mock_repo_mgr:
+            with patch(
+                "rez.package_repository.package_repository_manager"
+            ) as mock_repo_mgr:
                 mock_repo = MagicMock()
                 mock_repo.name = "central"
                 mock_repo.location = "/packages"
@@ -192,7 +194,9 @@ class TestBasicIntegration:
         repo_name = "central"
 
         with patch("rez_proxy.core.context.get_current_context", return_value=None):
-            with patch("rez.package_repository.package_repository_manager") as mock_repo_mgr:
+            with patch(
+                "rez.package_repository.package_repository_manager"
+            ) as mock_repo_mgr:
                 with patch("rez.packages.iter_packages") as mock_iter:
                     mock_repo = MagicMock()
                     mock_repo.name = repo_name

@@ -2,22 +2,23 @@
 Test exception handling and custom exceptions.
 """
 
+from unittest.mock import Mock
+
 import pytest
-from unittest.mock import Mock, patch
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from rez_proxy.exceptions import (
-    RezProxyError,
     RezConfigurationError,
-    RezPackageError,
-    RezResolverError,
     RezEnvironmentError,
+    RezPackageError,
+    RezProxyError,
+    RezResolverError,
     create_error_response,
-    handle_rez_exception,
-    rez_proxy_exception_handler,
-    http_exception_handler,
     general_exception_handler,
+    handle_rez_exception,
+    http_exception_handler,
+    rez_proxy_exception_handler,
 )
 
 
@@ -36,9 +37,7 @@ class TestRezProxyError:
         """Test initialization with all parameters."""
         details = {"key": "value", "number": 42}
         error = RezProxyError(
-            message="Custom message",
-            error_code="CUSTOM_ERROR",
-            details=details
+            message="Custom message", error_code="CUSTOM_ERROR", details=details
         )
         assert error.message == "Custom message"
         assert error.error_code == "CUSTOM_ERROR"
@@ -90,9 +89,7 @@ class TestRezPackageError:
         """Test initialization with package name and additional details."""
         details = {"version": "1.0.0"}
         error = RezPackageError(
-            "Package error", 
-            package_name="test_package", 
-            details=details
+            "Package error", package_name="test_package", details=details
         )
         assert error.message == "Package error"
         assert error.error_code == "REZ_PACKAGE_ERROR"
@@ -126,11 +123,7 @@ class TestRezResolverError:
         """Test initialization with packages and additional details."""
         packages = ["package1", "package2"]
         details = {"platform": "linux"}
-        error = RezResolverError(
-            "Resolver error", 
-            packages=packages, 
-            details=details
-        )
+        error = RezResolverError("Resolver error", packages=packages, details=details)
         assert error.message == "Resolver error"
         assert error.error_code == "REZ_RESOLVER_ERROR"
         assert error.details == {"packages": packages, "platform": "linux"}
@@ -168,16 +161,15 @@ class TestCreateErrorResponse:
         response = create_error_response(404, "Not found")
         assert isinstance(response, JSONResponse)
         assert response.status_code == 404
-        
+
         # Check response content structure
-        expected_content = {
-            "error": {
-                "code": "UNKNOWN_ERROR",
-                "message": "Not found",
-                "details": {}
-            }
-        }
-        assert response.body.decode() == '{"error":{"code":"UNKNOWN_ERROR","message":"Not found","details":{}}}'
+        assert "error" in response.json()
+        assert "code" in response.json()["error"]
+        assert "message" in response.json()["error"]
+        assert (
+            response.body.decode()
+            == '{"error":{"code":"UNKNOWN_ERROR","message":"Not found","details":{}}}'
+        )
 
     def test_error_response_with_all_params(self):
         """Test error response with all parameters."""
@@ -186,7 +178,7 @@ class TestCreateErrorResponse:
             status_code=400,
             message="Validation error",
             error_code="VALIDATION_ERROR",
-            details=details
+            details=details,
         )
         assert isinstance(response, JSONResponse)
         assert response.status_code == 400
@@ -208,7 +200,10 @@ class TestHandleRezException:
         with pytest.raises(RezConfigurationError) as exc_info:
             handle_rez_exception(error, "test context")
 
-        assert exc_info.value.message == "Invalid package repository plugin 'invalid_plugin' in Rez configuration"
+        assert (
+            exc_info.value.message
+            == "Invalid package repository plugin 'invalid_plugin' in Rez configuration"
+        )
         assert exc_info.value.error_code == "REZ_CONFIG_ERROR"
         assert "original_error" in exc_info.value.details
         assert "context" in exc_info.value.details
@@ -322,9 +317,7 @@ class TestExceptionHandlers:
         """Test RezProxyError exception handler."""
         details = {"key": "value"}
         error = RezProxyError(
-            message="Test error",
-            error_code="TEST_ERROR",
-            details=details
+            message="Test error", error_code="TEST_ERROR", details=details
         )
 
         response = await rez_proxy_exception_handler(mock_request, error)
@@ -373,7 +366,9 @@ class TestExceptionHandlers:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_general_exception_handler_with_different_exception_types(self, mock_request):
+    async def test_general_exception_handler_with_different_exception_types(
+        self, mock_request
+    ):
         """Test general exception handler with different exception types."""
         # Test with RuntimeError
         error = RuntimeError("Runtime error occurred")

@@ -7,8 +7,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from rez_proxy.exceptions import handle_rez_exception
-from rez_proxy.core.rez_imports import rez_api, requires_rez
+from rez_proxy.core.rez_imports import requires_rez, rez_api
 
 router = APIRouter()
 
@@ -25,7 +24,7 @@ class ResolverRequest(BaseModel):
     time_limit: int = -1
     verbosity: int = 0
 
-    def model_post_init(self, __context):
+    def model_post_init(self, __context: Any) -> None:
         """Validate packages list is not empty."""
         if not self.packages:
             raise ValueError("Packages list cannot be empty")
@@ -48,7 +47,7 @@ class DependencyGraphRequest(BaseModel):
     packages: list[str]
     depth: int = 3
 
-    def model_post_init(self, __context):
+    def model_post_init(self, __context: Any) -> None:
         """Validate packages list is not empty."""
         if not self.packages:
             raise ValueError("Packages list cannot be empty")
@@ -97,7 +96,7 @@ async def advanced_resolve(request: ResolverRequest) -> ResolverResponse:
                             "uri": getattr(package, "uri", None),
                         }
                         resolved_packages.append(pkg_info)
-        except Exception as e:
+        except Exception:
             # Log error but continue with empty resolved_packages
             pass
 
@@ -131,6 +130,7 @@ async def advanced_resolve(request: ResolverRequest) -> ResolverResponse:
 async def get_dependency_graph(request: DependencyGraphRequest) -> dict[str, Any]:
     """Get dependency graph for packages."""
     try:
+
         def get_dependencies(
             package_name: str, depth: int, visited: set[str] | None = None
         ) -> dict[str, Any]:
@@ -153,7 +153,7 @@ async def get_dependency_graph(request: DependencyGraphRequest) -> dict[str, Any
                 raise HTTPException(
                     status_code=500, detail=f"Rez packages API not available: {e}"
                 )
-            except Exception as e:
+            except Exception:
                 # Package not found or other error
                 return {}
 
@@ -181,12 +181,16 @@ async def get_dependency_graph(request: DependencyGraphRequest) -> dict[str, Any
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Dependency graph generation failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Dependency graph generation failed: {e}"
+        )
 
 
 @router.get("/conflicts")
 @requires_rez
-async def detect_conflicts(packages: list[str] = Query(..., min_length=1)) -> dict[str, Any]:
+async def detect_conflicts(
+    packages: list[str] = Query(..., min_length=1),
+) -> dict[str, Any]:
     """Detect potential conflicts between packages."""
 
     try:
@@ -211,7 +215,9 @@ async def detect_conflicts(packages: list[str] = Query(..., min_length=1)) -> di
             # Check if resolution failed
             if status_name != "solved" and str(context.status) != "solved":
                 # Analyze failure reasons
-                failure_desc = getattr(context, "failure_description", "Unknown conflict")
+                failure_desc = getattr(
+                    context, "failure_description", "Unknown conflict"
+                )
                 conflicts.append(
                     {
                         "type": "resolution_failure",
@@ -251,7 +257,9 @@ async def validate_package_list(packages: list[str]) -> dict[str, Any]:
                         "requirement": package_req,
                         "valid": True,
                         "parsed_name": getattr(req, "name", None),
-                        "parsed_range": str(getattr(req, "range", None)) if hasattr(req, "range") and req.range else None,
+                        "parsed_range": str(getattr(req, "range", None))
+                        if hasattr(req, "range") and req.range
+                        else None,
                         "error": None,
                     }
                 )
@@ -268,7 +276,9 @@ async def validate_package_list(packages: list[str]) -> dict[str, Any]:
                 )
             except RuntimeError as e:
                 # System errors should be raised as 500
-                raise HTTPException(status_code=500, detail=f"Package validation failed: {e}")
+                raise HTTPException(
+                    status_code=500, detail=f"Package validation failed: {e}"
+                )
             except Exception as e:
                 validation_results.append(
                     {

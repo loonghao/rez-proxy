@@ -4,12 +4,8 @@ Tests for rez_proxy.utils.config_utils module.
 
 import json
 import os
-import tempfile
-import time
-from pathlib import Path
 from unittest.mock import Mock, patch
 
-import pytest
 from pyfakefs.fake_filesystem_unittest import TestCase
 
 from rez_proxy.utils.config_utils import (
@@ -35,31 +31,31 @@ class TestCreateDefaultConfigFile(TestCase):
     def test_create_default_config_file_success(self):
         """Test creating default config file successfully."""
         config_path = "/test/config.json"
-        
-        with patch('builtins.print') as mock_print:
+
+        with patch("builtins.print") as mock_print:
             create_default_config_file(config_path)
-        
+
         # Check file was created
         self.assertTrue(os.path.exists(config_path))
-        
+
         # Check file content
-        with open(config_path, 'r') as f:
+        with open(config_path) as f:
             config_data = json.load(f)
-        
+
         # Should contain basic config fields but not sensitive ones
-        self.assertIn('host', config_data)
-        self.assertIn('port', config_data)
-        self.assertNotIn('api_key', config_data)
-        
+        self.assertIn("host", config_data)
+        self.assertIn("port", config_data)
+        self.assertNotIn("api_key", config_data)
+
         # Check print was called
         mock_print.assert_called_once()
 
     def test_create_default_config_file_creates_directory(self):
         """Test creating config file creates parent directories."""
         config_path = "/test/nested/dir/config.json"
-        
+
         create_default_config_file(config_path)
-        
+
         # Check directory was created
         self.assertTrue(os.path.exists("/test/nested/dir"))
         self.assertTrue(os.path.exists(config_path))
@@ -67,9 +63,9 @@ class TestCreateDefaultConfigFile(TestCase):
     def test_create_default_config_file_no_directory(self):
         """Test creating config file in current directory."""
         config_path = "config.json"
-        
+
         create_default_config_file(config_path)
-        
+
         self.assertTrue(os.path.exists(config_path))
 
 
@@ -83,7 +79,7 @@ class TestValidateConfigFile(TestCase):
     def test_validate_config_file_not_found(self):
         """Test validation when config file doesn't exist."""
         result = validate_config_file("/nonexistent/config.json")
-        
+
         self.assertFalse(result["valid"])
         self.assertIn("Configuration file not found", result["errors"][0])
         self.assertEqual(result["config"], None)
@@ -92,24 +88,20 @@ class TestValidateConfigFile(TestCase):
         """Test validation with invalid JSON."""
         config_path = "/test/config.json"
         self.fs.create_file(config_path, contents="invalid json {")
-        
+
         result = validate_config_file(config_path)
-        
+
         self.assertFalse(result["valid"])
         self.assertIn("Invalid JSON format", result["errors"][0])
 
     def test_validate_config_file_valid_config(self):
         """Test validation with valid configuration."""
         config_path = "/test/config.json"
-        valid_config = {
-            "host": "localhost",
-            "port": 8000,
-            "api_prefix": "/api"
-        }
+        valid_config = {"host": "localhost", "port": 8000, "api_prefix": "/api"}
         self.fs.create_file(config_path, contents=json.dumps(valid_config))
-        
+
         result = validate_config_file(config_path)
-        
+
         self.assertTrue(result["valid"])
         self.assertEqual(len(result["errors"]), 0)
         self.assertIsNotNone(result["config"])
@@ -120,12 +112,12 @@ class TestValidateConfigFile(TestCase):
         config_with_unknown = {
             "host": "localhost",
             "port": 8000,
-            "unknown_field": "value"
+            "unknown_field": "value",
         }
         self.fs.create_file(config_path, contents=json.dumps(config_with_unknown))
-        
+
         result = validate_config_file(config_path)
-        
+
         self.assertTrue(result["valid"])
         self.assertIn("Unknown configuration fields", result["warnings"][0])
 
@@ -145,12 +137,12 @@ class TestValidateConfigFile(TestCase):
         config_path = "/test/config.json"
         invalid_config = {
             "host": "localhost",
-            "port": "invalid_port"  # Should be integer
+            "port": "invalid_port",  # Should be integer
         }
         self.fs.create_file(config_path, contents=json.dumps(invalid_config))
-        
+
         result = validate_config_file(config_path)
-        
+
         self.assertFalse(result["valid"])
         self.assertIn("Configuration validation error", result["errors"][0])
 
@@ -160,40 +152,29 @@ class TestValidateConfigFileData(TestCase):
 
     def test_validate_config_file_data_valid(self):
         """Test validation with valid config data."""
-        config_data = {
-            "host": "localhost",
-            "port": 8000,
-            "api_prefix": "/api"
-        }
-        
+        config_data = {"host": "localhost", "port": 8000, "api_prefix": "/api"}
+
         result = validate_config_file_data(config_data)
-        
+
         self.assertTrue(result["valid"])
         self.assertEqual(len(result["errors"]), 0)
         self.assertIsNotNone(result["config"])
 
     def test_validate_config_file_data_invalid(self):
         """Test validation with invalid config data."""
-        config_data = {
-            "host": "localhost",
-            "port": "invalid_port"
-        }
-        
+        config_data = {"host": "localhost", "port": "invalid_port"}
+
         result = validate_config_file_data(config_data)
-        
+
         self.assertFalse(result["valid"])
         self.assertIn("Configuration validation error", result["errors"][0])
 
     def test_validate_config_file_data_unknown_fields(self):
         """Test validation with unknown fields."""
-        config_data = {
-            "host": "localhost",
-            "port": 8000,
-            "unknown_field": "value"
-        }
-        
+        config_data = {"host": "localhost", "port": 8000, "unknown_field": "value"}
+
         result = validate_config_file_data(config_data)
-        
+
         self.assertTrue(result["valid"])
         self.assertIn("Unknown configuration fields", result["warnings"][0])
 
@@ -217,21 +198,21 @@ class TestMergeConfigFiles(TestCase):
         self.fs.create_file(base_path, contents=json.dumps(base_config))
         self.fs.create_file(override_path, contents=json.dumps(override_config))
 
-        with patch('builtins.print') as mock_print:
+        with patch("builtins.print") as mock_print:
             merge_config_files(base_path, override_path, output_path)
 
         # Check merged file was created
         self.assertTrue(os.path.exists(output_path))
 
         # Check merged content
-        with open(output_path, 'r') as f:
+        with open(output_path) as f:
             merged_data = json.load(f)
 
         expected = {
             "host": "localhost",  # from base
-            "port": 9000,         # overridden
-            "rez_debug": True,    # overridden
-            "workers": 4          # added
+            "port": 9000,  # overridden
+            "rez_debug": True,  # overridden
+            "workers": 4,  # added
         }
         self.assertEqual(merged_data, expected)
         mock_print.assert_called_once()
@@ -266,16 +247,16 @@ class TestBackupConfigFile(TestCase):
         config_path = "/test/config.json"
         config_data = {"host": "localhost", "port": 8000}
         self.fs.create_file(config_path, contents=json.dumps(config_data))
-        
-        with patch('builtins.print') as mock_print:
+
+        with patch("builtins.print") as mock_print:
             backup_path = backup_config_file(config_path)
-        
+
         expected_backup = config_path + ".backup"
         self.assertEqual(backup_path, expected_backup)
         self.assertTrue(os.path.exists(backup_path))
-        
+
         # Check backup content matches original
-        with open(backup_path, 'r') as f:
+        with open(backup_path) as f:
             backup_data = json.load(f)
         self.assertEqual(backup_data, config_data)
         mock_print.assert_called_once()
@@ -284,21 +265,21 @@ class TestBackupConfigFile(TestCase):
         """Test backup when config file doesn't exist."""
         with self.assertRaises(FileNotFoundError) as cm:
             backup_config_file("/nonexistent/config.json")
-        
+
         self.assertIn("Configuration file not found", str(cm.exception))
 
     def test_backup_config_file_existing_backup(self):
         """Test backup when backup already exists."""
         config_path = "/test/config.json"
         backup_path = config_path + ".backup"
-        
+
         config_data = {"host": "localhost", "port": 8000}
         self.fs.create_file(config_path, contents=json.dumps(config_data))
         self.fs.create_file(backup_path, contents="existing backup")
-        
-        with patch('time.time', return_value=1234567890):
+
+        with patch("time.time", return_value=1234567890):
             result_backup = backup_config_file(config_path)
-        
+
         expected_backup = f"{config_path}.backup.1234567890"
         self.assertEqual(result_backup, expected_backup)
         self.assertTrue(os.path.exists(expected_backup))
@@ -308,9 +289,9 @@ class TestBackupConfigFile(TestCase):
         config_path = "/test/config.json"
         config_data = {"host": "localhost", "port": 8000}
         self.fs.create_file(config_path, contents=json.dumps(config_data))
-        
+
         backup_path = backup_config_file(config_path, ".old")
-        
+
         expected_backup = config_path + ".old"
         self.assertEqual(backup_path, expected_backup)
         self.assertTrue(os.path.exists(backup_path))
@@ -327,17 +308,17 @@ class TestRestoreConfigFromBackup(TestCase):
         """Test successful config restoration."""
         backup_path = "/test/config.backup"
         target_path = "/test/config.json"
-        
+
         backup_data = {"host": "localhost", "port": 8000}
         self.fs.create_file(backup_path, contents=json.dumps(backup_data))
-        
-        with patch('builtins.print') as mock_print:
+
+        with patch("builtins.print") as mock_print:
             restore_config_from_backup(backup_path, target_path)
-        
+
         self.assertTrue(os.path.exists(target_path))
-        
+
         # Check restored content
-        with open(target_path, 'r') as f:
+        with open(target_path) as f:
             restored_data = json.load(f)
         self.assertEqual(restored_data, backup_data)
         mock_print.assert_called_once()
@@ -346,21 +327,21 @@ class TestRestoreConfigFromBackup(TestCase):
         """Test restoration when backup doesn't exist."""
         with self.assertRaises(FileNotFoundError) as cm:
             restore_config_from_backup("/nonexistent/backup", "/test/config.json")
-        
+
         self.assertIn("Backup file not found", str(cm.exception))
 
     def test_restore_config_from_backup_invalid(self):
         """Test restoration with invalid backup."""
         backup_path = "/test/config.backup"
         target_path = "/test/config.json"
-        
+
         # Create invalid backup
         invalid_backup = {"port": "invalid_port"}
         self.fs.create_file(backup_path, contents=json.dumps(invalid_backup))
-        
+
         with self.assertRaises(ValueError) as cm:
             restore_config_from_backup(backup_path, target_path)
-        
+
         self.assertIn("Backup configuration is invalid", str(cm.exception))
 
 
@@ -417,49 +398,41 @@ class TestApplyConfigTemplate(TestCase):
 
     def test_apply_config_template_success(self):
         """Test successful template application."""
-        template_content = '''
+        template_content = """
         {
             "host": "${HOST}",
             "port": ${PORT},
             "rez_debug": ${DEBUG}
         }
-        '''
+        """
 
         template_path = "/test/template.json"
         output_path = "/test/config.json"
 
         self.fs.create_file(template_path, contents=template_content)
 
-        variables = {
-            "HOST": "localhost",
-            "PORT": "8000",
-            "DEBUG": "true"
-        }
+        variables = {"HOST": "localhost", "PORT": "8000", "DEBUG": "true"}
 
-        with patch('builtins.print') as mock_print:
+        with patch("builtins.print") as mock_print:
             apply_config_template(template_path, variables, output_path)
 
         self.assertTrue(os.path.exists(output_path))
 
         # Check output content
-        with open(output_path, 'r') as f:
+        with open(output_path) as f:
             config_data = json.load(f)
 
-        expected = {
-            "host": "localhost",
-            "port": 8000,
-            "rez_debug": True
-        }
+        expected = {"host": "localhost", "port": 8000, "rez_debug": True}
         self.assertEqual(config_data, expected)
         mock_print.assert_called_once()
 
     def test_apply_config_template_invalid_json(self):
         """Test template that results in invalid JSON."""
-        template_content = '''
+        template_content = """
         {
             "host": "${HOST}",
             "port": ${PORT}
-        '''  # Missing closing brace
+        """  # Missing closing brace
 
         template_path = "/test/template.json"
         output_path = "/test/config.json"
@@ -475,12 +448,12 @@ class TestApplyConfigTemplate(TestCase):
 
     def test_apply_config_template_invalid_config(self):
         """Test template that results in invalid configuration."""
-        template_content = '''
+        template_content = """
         {
             "host": "${HOST}",
             "port": "${PORT}"
         }
-        '''
+        """
 
         template_path = "/test/template.json"
         output_path = "/test/config.json"
@@ -503,7 +476,11 @@ class TestWatchConfigChanges(TestCase):
         callback_func = Mock()
         mock_config_manager = Mock()
 
-        with patch('rez_proxy.utils.config_utils.get_config_manager', return_value=mock_config_manager):
+        with patch(
+            "rez_proxy.utils.config_utils.get_config_manager",
+            return_value=mock_config_manager,
+        ):
+
             @watch_config_changes(callback_func)
             def test_function():
                 return "test_result"
@@ -512,14 +489,20 @@ class TestWatchConfigChanges(TestCase):
 
         self.assertEqual(result, "test_result")
         mock_config_manager.add_change_callback.assert_called_once_with(callback_func)
-        mock_config_manager.remove_change_callback.assert_called_once_with(callback_func)
+        mock_config_manager.remove_change_callback.assert_called_once_with(
+            callback_func
+        )
 
     def test_watch_config_changes_decorator_with_exception(self):
         """Test decorator when wrapped function raises exception."""
         callback_func = Mock()
         mock_config_manager = Mock()
 
-        with patch('rez_proxy.utils.config_utils.get_config_manager', return_value=mock_config_manager):
+        with patch(
+            "rez_proxy.utils.config_utils.get_config_manager",
+            return_value=mock_config_manager,
+        ):
+
             @watch_config_changes(callback_func)
             def test_function():
                 raise ValueError("Test error")
@@ -529,4 +512,6 @@ class TestWatchConfigChanges(TestCase):
 
         # Should still remove callback even when exception occurs
         mock_config_manager.add_change_callback.assert_called_once_with(callback_func)
-        mock_config_manager.remove_change_callback.assert_called_once_with(callback_func)
+        mock_config_manager.remove_change_callback.assert_called_once_with(
+            callback_func
+        )

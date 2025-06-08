@@ -101,9 +101,9 @@ async def get_shell_info(shell_name: str, request: Request) -> dict[str, Any]:
     alternatives=[
         "Use a local rez-proxy instance for shell access",
         "Set up a web-based terminal service",
-        "Use SSH or remote desktop for shell access"
+        "Use SSH or remote desktop for shell access",
     ],
-    documentation_url="/docs/web-environment-compatibility"
+    documentation_url="/docs/web-environment-compatibility",
 )
 async def spawn_shell(shell_name: str, env_id: str) -> None:
     """Spawn a shell in the specified environment."""

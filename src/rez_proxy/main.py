@@ -16,8 +16,8 @@ from rez_proxy.exceptions import (
 )
 from rez_proxy.middleware.context import ContextMiddleware
 from rez_proxy.middleware.web_compatibility import (
-    WebCompatibilityMiddleware,
     WebCompatibilityInfoMiddleware,
+    WebCompatibilityMiddleware,
     register_web_compatibility_handlers,
 )
 from rez_proxy.routers import (
@@ -85,7 +85,9 @@ def create_app() -> VersionedFastAPI:
     app.include_router(build.router, prefix="/build", tags=["build"])
     app.include_router(suites.router, prefix="/suites", tags=["suites"])
     app.include_router(
-        config_management.router, prefix="/config-management", tags=["config-management"]
+        config_management.router,
+        prefix="/config-management",
+        tags=["config-management"],
     )
     app.include_router(
         web_detection.router, prefix="/web-detection", tags=["web-detection"]

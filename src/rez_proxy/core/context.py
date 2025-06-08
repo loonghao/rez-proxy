@@ -8,7 +8,6 @@ import uuid
 from contextvars import ContextVar
 
 from rez_proxy.models.schemas import ClientContext, PlatformInfo, ServiceMode
-from rez_proxy.core.web_detector import get_web_detector
 
 # Context variables for request-scoped data
 current_client_context: ContextVar[ClientContext | None] = ContextVar(

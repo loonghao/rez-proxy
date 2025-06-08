@@ -11,7 +11,6 @@ from fastapi import APIRouter, HTTPException
 from fastapi_versioning import version
 from pydantic import BaseModel, Field
 
-from rez_proxy.exceptions import handle_rez_exception
 from rez_proxy.core.web_compatibility import web_limited
 
 router = APIRouter()
@@ -132,7 +131,9 @@ async def get_suite(suite_id: str) -> SuiteInfo:
             status=suite_info["status"],
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve suite: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve suite: {str(e)}"
+        )
 
 
 @router.post("/{suite_id}/contexts")
@@ -170,7 +171,9 @@ async def add_context_to_suite(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to add context to suite: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to add context to suite: {str(e)}"
+        )
 
 
 @router.post("/{suite_id}/tools/alias")
@@ -197,7 +200,9 @@ async def alias_tool_in_suite(
             "message": f"Tool '{request.tool_name}' aliased as '{request.alias_name}' in suite '{suite_id}'"
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to alias tool in suite: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to alias tool in suite: {str(e)}"
+        )
 
 
 @router.post("/{suite_id}/save")
@@ -206,8 +211,8 @@ async def alias_tool_in_suite(
     reason="Requires local file system write access for suite persistence",
     alternatives=[
         "Use in-memory suite storage for web environments",
-        "Export suite configuration as JSON for manual saving"
-    ]
+        "Export suite configuration as JSON for manual saving",
+    ],
 )
 async def save_suite(suite_id: str, path: str | None = None) -> dict[str, str]:
     """Save a suite to disk."""
@@ -274,7 +279,9 @@ async def get_suite_tools(suite_id: str) -> dict[str, Any]:
             "total_tools": len(tools),
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve suite tools: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve suite tools: {str(e)}"
+        )
 
 
 @router.delete("/{suite_id}")

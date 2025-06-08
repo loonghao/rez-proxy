@@ -3,17 +3,15 @@ Tests for Web environment detection functionality.
 """
 
 import os
-import tempfile
-from unittest.mock import patch, mock_open
-import pytest
+from unittest.mock import mock_open, patch
 
 from rez_proxy.core.web_detector import (
     WebEnvironmentDetector,
+    clear_detection_cache,
+    force_web_mode,
+    get_detected_service_mode,
     get_web_detector,
     is_web_environment,
-    get_detected_service_mode,
-    force_web_mode,
-    clear_detection_cache,
 )
 from rez_proxy.models.schemas import ServiceMode
 
@@ -75,7 +73,9 @@ class TestWebEnvironmentDetector:
     def test_environment_variables_force_local(self):
         """Test forcing local mode via environment variable."""
         # Even with web indicators, force local should override
-        with patch.dict(os.environ, {"SERVER_SOFTWARE": "nginx", "REZ_PROXY_FORCE_LOCAL": "true"}):
+        with patch.dict(
+            os.environ, {"SERVER_SOFTWARE": "nginx", "REZ_PROXY_FORCE_LOCAL": "true"}
+        ):
             assert self.detector._check_environment_variables() is False
 
     @patch("os.getcwd")
@@ -128,14 +128,20 @@ class TestWebEnvironmentDetector:
         assert self.detector._check_container_environment() is True
 
     @patch("os.path.exists")
-    @patch("builtins.open", new_callable=mock_open, read_data="1:name=systemd:/docker/abc123")
+    @patch(
+        "builtins.open",
+        new_callable=mock_open,
+        read_data="1:name=systemd:/docker/abc123",
+    )
     def test_container_environment_detection_cgroup(self, mock_file, mock_exists):
         """Test container environment detection with cgroup."""
         mock_exists.side_effect = lambda path: path == "/proc/1/cgroup"
         assert self.detector._check_container_environment() is True
 
     @patch("os.path.exists")
-    @patch("builtins.open", new_callable=mock_open, read_data="1:name=systemd:/init.scope")
+    @patch(
+        "builtins.open", new_callable=mock_open, read_data="1:name=systemd:/init.scope"
+    )
     def test_container_environment_detection_no_container(self, mock_file, mock_exists):
         """Test container environment detection without container."""
         mock_exists.side_effect = lambda path: path == "/proc/1/cgroup"
@@ -150,7 +156,9 @@ class TestWebEnvironmentDetector:
     def test_caching_behavior(self):
         """Test that detection results are cached."""
         # Mock all detection methods to return False
-        with patch.object(self.detector, '_detect_web_environment', return_value=False) as mock_detect:
+        with patch.object(
+            self.detector, "_detect_web_environment", return_value=False
+        ) as mock_detect:
             # First call should trigger detection
             result1 = self.detector.is_web_environment()
             assert result1 is False
@@ -164,7 +172,7 @@ class TestWebEnvironmentDetector:
     def test_cache_clearing(self):
         """Test cache clearing functionality."""
         # Set up cache
-        with patch.object(self.detector, '_detect_web_environment', return_value=True):
+        with patch.object(self.detector, "_detect_web_environment", return_value=True):
             self.detector.is_web_environment()
             assert self.detector._detection_cache is True
 
@@ -175,13 +183,13 @@ class TestWebEnvironmentDetector:
     def test_get_detection_info(self):
         """Test getting detailed detection information."""
         info = self.detector.get_detection_info()
-        
+
         assert "is_web_environment" in info
         assert "service_mode" in info
         assert "forced_mode" in info
         assert "detection_methods" in info
         assert "relevant_env_vars" in info
-        
+
         # Check detection methods structure
         methods = info["detection_methods"]
         assert "environment_variables" in methods
@@ -209,7 +217,7 @@ class TestWebDetectorGlobalFunctions:
         """Test cached web environment detection."""
         # Clear cache first
         clear_detection_cache()
-        
+
         result1 = is_web_environment()
         result2 = is_web_environment()
         assert result1 is True
@@ -235,10 +243,10 @@ class TestWebDetectorGlobalFunctions:
         """Test clearing detection cache globally."""
         # Set up some cached state
         is_web_environment()
-        
+
         # Clear cache
         clear_detection_cache()
-        
+
         # Should work without errors
         result = is_web_environment()
         assert isinstance(result, bool)
@@ -251,7 +259,9 @@ class TestWebDetectorIntegration:
         """Set up test fixtures."""
         self.detector = WebEnvironmentDetector()
 
-    @patch.dict(os.environ, {"VERCEL": "1", "VERCEL_URL": "myapp.vercel.app"}, clear=True)
+    @patch.dict(
+        os.environ, {"VERCEL": "1", "VERCEL_URL": "myapp.vercel.app"}, clear=True
+    )
     @patch("os.path.exists", return_value=True)
     def test_vercel_environment_detection(self, mock_exists):
         """Test detection in Vercel environment."""

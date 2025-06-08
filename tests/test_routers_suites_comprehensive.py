@@ -2,11 +2,9 @@
 Comprehensive tests for suites router.
 """
 
-import json
-import tempfile
 import uuid
 from datetime import datetime
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -43,7 +41,7 @@ def mock_environment():
         "context": context,
         "packages": ["python-3.9"],
         "created_at": datetime.utcnow().isoformat(),
-        "status": "resolved"
+        "status": "resolved",
     }
 
 
@@ -51,6 +49,7 @@ def mock_environment():
 def clear_suites():
     """Clear suites storage before each test."""
     from rez_proxy.routers.suites import _suites
+
     _suites.clear()
     yield
     _suites.clear()
@@ -63,14 +62,11 @@ class TestSuiteCreation:
     def test_create_suite_success(self, mock_suite_class, client, mock_suite):
         """Test successful suite creation."""
         mock_suite_class.return_value = mock_suite
-        
-        request_data = {
-            "name": "test-suite",
-            "description": "A test suite"
-        }
-        
+
+        request_data = {"name": "test-suite", "description": "A test suite"}
+
         response = client.post("/api/v1/suites/", json=request_data)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "test-suite"
@@ -86,9 +82,7 @@ class TestSuiteCreation:
         """Test suite creation with minimal data."""
         mock_suite_class.return_value = mock_suite
 
-        request_data = {
-            "name": "minimal-suite"
-        }
+        request_data = {"name": "minimal-suite"}
 
         response = client.post("/api/v1/suites/", json=request_data)
 
@@ -101,23 +95,19 @@ class TestSuiteCreation:
     def test_create_suite_rez_error(self, mock_suite_class, client):
         """Test suite creation with Rez error."""
         mock_suite_class.side_effect = Exception("Rez Suite creation failed")
-        
-        request_data = {
-            "name": "failing-suite"
-        }
-        
+
+        request_data = {"name": "failing-suite"}
+
         response = client.post("/api/v1/suites/", json=request_data)
-        
+
         assert response.status_code == 500
 
     def test_create_suite_validation_error(self, client):
         """Test suite creation with validation error."""
-        request_data = {
-            "description": "Missing name field"
-        }
-        
+        request_data = {"description": "Missing name field"}
+
         response = client.post("/api/v1/suites/", json=request_data)
-        
+
         assert response.status_code == 422
 
 
@@ -131,17 +121,17 @@ class TestSuiteRetrieval:
         mock_suite_class.return_value = mock_suite
         create_response = client.post("/api/v1/suites/", json={"name": "test-suite"})
         suite_id = create_response.json()["id"]
-        
+
         # Mock tools for retrieval
         mock_tool = MagicMock()
         mock_tool.context_name = "test-context"
         mock_tool.__str__ = lambda self: "test-command"
         mock_suite.get_tools.return_value = {"test-tool": mock_tool}
         mock_suite.context_names = ["test-context"]
-        
+
         # Get the suite
         response = client.get(f"/api/v1/suites/{suite_id}")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == suite_id
@@ -153,7 +143,7 @@ class TestSuiteRetrieval:
         """Test getting non-existent suite."""
         fake_id = str(uuid.uuid4())
         response = client.get(f"/api/v1/suites/{fake_id}")
-        
+
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
@@ -182,27 +172,29 @@ class TestSuiteContextManagement:
 
     @patch("rez.suite.Suite")
     @patch("rez_proxy.routers.environments._environments")
-    def test_add_context_to_suite_success(self, mock_environments, mock_suite_class, client, mock_suite, mock_environment):
+    def test_add_context_to_suite_success(
+        self, mock_environments, mock_suite_class, client, mock_suite, mock_environment
+    ):
         """Test successfully adding context to suite."""
         # Setup
         mock_suite_class.return_value = mock_suite
         env_id = str(uuid.uuid4())
         mock_environments.__contains__ = lambda self, x: x == env_id
         mock_environments.__getitem__ = lambda self, x: mock_environment
-        
+
         # Create suite
         create_response = client.post("/api/v1/suites/", json={"name": "test-suite"})
         suite_id = create_response.json()["id"]
-        
+
         # Add context
         request_data = {
             "context_name": "test-context",
             "environment_id": env_id,
-            "prefix_char": "t"
+            "prefix_char": "t",
         }
-        
+
         response = client.post(f"/api/v1/suites/{suite_id}/contexts", json=request_data)
-        
+
         assert response.status_code == 200
         assert "added to suite" in response.json()["message"]
         mock_suite.add_context.assert_called_once()
@@ -212,16 +204,18 @@ class TestSuiteContextManagement:
         fake_id = str(uuid.uuid4())
         request_data = {
             "context_name": "test-context",
-            "environment_id": str(uuid.uuid4())
+            "environment_id": str(uuid.uuid4()),
         }
-        
+
         response = client.post(f"/api/v1/suites/{fake_id}/contexts", json=request_data)
-        
+
         assert response.status_code == 404
 
     @patch("rez.suite.Suite")
     @patch("rez_proxy.routers.environments._environments")
-    def test_add_context_environment_not_found(self, mock_environments, mock_suite_class, client, mock_suite):
+    def test_add_context_environment_not_found(
+        self, mock_environments, mock_suite_class, client, mock_suite
+    ):
         """Test adding non-existent environment to suite."""
         # Setup
         mock_suite_class.return_value = mock_suite
@@ -234,7 +228,7 @@ class TestSuiteContextManagement:
         # Try to add non-existent environment
         request_data = {
             "context_name": "test-context",
-            "environment_id": str(uuid.uuid4())
+            "environment_id": str(uuid.uuid4()),
         }
 
         response = client.post(f"/api/v1/suites/{suite_id}/contexts", json=request_data)
@@ -253,16 +247,18 @@ class TestSuiteToolManagement:
         mock_suite_class.return_value = mock_suite
         create_response = client.post("/api/v1/suites/", json={"name": "test-suite"})
         suite_id = create_response.json()["id"]
-        
+
         # Alias tool
         request_data = {
             "context_name": "test-context",
             "tool_name": "python",
-            "alias_name": "py"
+            "alias_name": "py",
         }
-        
-        response = client.post(f"/api/v1/suites/{suite_id}/tools/alias", json=request_data)
-        
+
+        response = client.post(
+            f"/api/v1/suites/{suite_id}/tools/alias", json=request_data
+        )
+
         assert response.status_code == 200
         assert "aliased as" in response.json()["message"]
         mock_suite.alias_tool.assert_called_once()
@@ -273,11 +269,13 @@ class TestSuiteToolManagement:
         request_data = {
             "context_name": "test-context",
             "tool_name": "python",
-            "alias_name": "py"
+            "alias_name": "py",
         }
-        
-        response = client.post(f"/api/v1/suites/{fake_id}/tools/alias", json=request_data)
-        
+
+        response = client.post(
+            f"/api/v1/suites/{fake_id}/tools/alias", json=request_data
+        )
+
         assert response.status_code == 404
 
     @patch("rez.suite.Suite")
@@ -343,7 +341,9 @@ class TestSuitePersistence:
 
         # Save suite with custom path
         custom_path = "/tmp/custom_suite_path"
-        response = client.post(f"/api/v1/suites/{suite_id}/save", params={"path": custom_path})
+        response = client.post(
+            f"/api/v1/suites/{suite_id}/save", params={"path": custom_path}
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -434,7 +434,10 @@ class TestSuiteManagement:
 
         suite_ids = []
         for i in range(3):
-            response = client.post("/api/v1/suites/", json={"name": f"suite-{i}", "description": f"Suite {i}"})
+            response = client.post(
+                "/api/v1/suites/",
+                json={"name": f"suite-{i}", "description": f"Suite {i}"},
+            )
             suite_ids.append(response.json()["id"])
 
         # List suites
@@ -459,7 +462,9 @@ class TestSuiteErrorHandling:
     """Test error handling in suite operations."""
 
     @patch("rez.suite.Suite")
-    def test_add_context_rez_error(self, mock_suite_class, client, mock_suite, mock_environment):
+    def test_add_context_rez_error(
+        self, mock_suite_class, client, mock_suite, mock_environment
+    ):
         """Test adding context with Rez error."""
         # Setup
         mock_suite_class.return_value = mock_suite
@@ -476,12 +481,11 @@ class TestSuiteErrorHandling:
             mock_environments.__contains__ = lambda self, x: x == env_id
             mock_environments.__getitem__ = lambda self, x: mock_environment
 
-            request_data = {
-                "context_name": "test-context",
-                "environment_id": env_id
-            }
+            request_data = {"context_name": "test-context", "environment_id": env_id}
 
-            response = client.post(f"/api/v1/suites/{suite_id}/contexts", json=request_data)
+            response = client.post(
+                f"/api/v1/suites/{suite_id}/contexts", json=request_data
+            )
 
             assert response.status_code == 500
 
@@ -499,10 +503,12 @@ class TestSuiteErrorHandling:
         request_data = {
             "context_name": "test-context",
             "tool_name": "python",
-            "alias_name": "py"
+            "alias_name": "py",
         }
 
-        response = client.post(f"/api/v1/suites/{suite_id}/tools/alias", json=request_data)
+        response = client.post(
+            f"/api/v1/suites/{suite_id}/tools/alias", json=request_data
+        )
 
         assert response.status_code == 500
 
@@ -533,7 +539,9 @@ class TestSuiteErrorHandling:
         suite_id = create_response.json()["id"]
 
         # Mock context_names access error
-        type(mock_suite).context_names = PropertyMock(side_effect=Exception("Rez context error"))
+        type(mock_suite).context_names = PropertyMock(
+            side_effect=Exception("Rez context error")
+        )
 
         response = client.get(f"/api/v1/suites/{suite_id}")
 
@@ -546,17 +554,19 @@ class TestSuiteIntegration:
     """Test suite integration scenarios."""
 
     @patch("rez.suite.Suite")
-    def test_full_suite_workflow(self, mock_suite_class, client, mock_suite, mock_environment):
+    def test_full_suite_workflow(
+        self, mock_suite_class, client, mock_suite, mock_environment
+    ):
         """Test complete suite workflow."""
         # Setup
         mock_suite_class.return_value = mock_suite
         mock_suite.context_names = []
 
         # 1. Create suite
-        create_response = client.post("/api/v1/suites/", json={
-            "name": "integration-suite",
-            "description": "Full workflow test"
-        })
+        create_response = client.post(
+            "/api/v1/suites/",
+            json={"name": "integration-suite", "description": "Full workflow test"},
+        )
         assert create_response.status_code == 200
         suite_id = create_response.json()["id"]
 
@@ -566,20 +576,26 @@ class TestSuiteIntegration:
             mock_environments.__contains__ = lambda self, x: x == env_id
             mock_environments.__getitem__ = lambda self, x: mock_environment
 
-            context_response = client.post(f"/api/v1/suites/{suite_id}/contexts", json={
-                "context_name": "python-context",
-                "environment_id": env_id,
-                "prefix_char": "p"
-            })
+            context_response = client.post(
+                f"/api/v1/suites/{suite_id}/contexts",
+                json={
+                    "context_name": "python-context",
+                    "environment_id": env_id,
+                    "prefix_char": "p",
+                },
+            )
             assert context_response.status_code == 200
             mock_suite.context_names = ["python-context"]
 
         # 3. Alias tool
-        alias_response = client.post(f"/api/v1/suites/{suite_id}/tools/alias", json={
-            "context_name": "python-context",
-            "tool_name": "python",
-            "alias_name": "py"
-        })
+        alias_response = client.post(
+            f"/api/v1/suites/{suite_id}/tools/alias",
+            json={
+                "context_name": "python-context",
+                "tool_name": "python",
+                "alias_name": "py",
+            },
+        )
         assert alias_response.status_code == 200
 
         # 4. Get tools

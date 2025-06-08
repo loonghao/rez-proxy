@@ -29,7 +29,7 @@ class TestVersionsRouterComprehensive:
         mock_rez_api.create_version.return_value = mock_version
 
         response = client.post("/api/v1/versions/parse", json={"version": "1.2.3"})
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["version"] == "1.2.3"
@@ -53,6 +53,7 @@ class TestVersionsRouterComprehensive:
     def test_parse_version_attribute_error(self, mock_safe_rez_import, client):
         """Test version parsing with AttributeError."""
         from rez_proxy.core.rez_imports import RezImportError
+
         mock_safe_rez_import.side_effect = RezImportError("Rez is not available")
 
         response = client.post("/api/v1/versions/parse", json={"version": "1.2.3"})
@@ -68,17 +69,16 @@ class TestVersionsRouterComprehensive:
         mock_v1.__str__ = Mock(return_value="1.2.3")
         mock_v1.__lt__ = Mock(return_value=True)
         mock_v1.__gt__ = Mock(return_value=False)
-        
+
         mock_v2 = Mock()
         mock_v2.__str__ = Mock(return_value="1.2.4")
-        
+
         mock_rez_api.create_version.side_effect = [mock_v1, mock_v2]
 
-        response = client.post("/api/v1/versions/compare", json={
-            "version1": "1.2.3",
-            "version2": "1.2.4"
-        })
-        
+        response = client.post(
+            "/api/v1/versions/compare", json={"version1": "1.2.3", "version2": "1.2.4"}
+        )
+
         assert response.status_code == 200
         data = response.json()
         assert data["version1"] == "1.2.3"
@@ -96,17 +96,16 @@ class TestVersionsRouterComprehensive:
         mock_v1.__str__ = Mock(return_value="1.2.3")
         mock_v1.__lt__ = Mock(return_value=False)
         mock_v1.__gt__ = Mock(return_value=False)
-        
+
         mock_v2 = Mock()
         mock_v2.__str__ = Mock(return_value="1.2.3")
-        
+
         mock_rez_api.create_version.side_effect = [mock_v1, mock_v2]
 
-        response = client.post("/api/v1/versions/compare", json={
-            "version1": "1.2.3",
-            "version2": "1.2.3"
-        })
-        
+        response = client.post(
+            "/api/v1/versions/compare", json={"version1": "1.2.3", "version2": "1.2.3"}
+        )
+
         assert response.status_code == 200
         data = response.json()
         assert data["comparison"] == 0
@@ -122,17 +121,16 @@ class TestVersionsRouterComprehensive:
         mock_v1.__str__ = Mock(return_value="1.2.4")
         mock_v1.__lt__ = Mock(return_value=False)
         mock_v1.__gt__ = Mock(return_value=True)
-        
+
         mock_v2 = Mock()
         mock_v2.__str__ = Mock(return_value="1.2.3")
-        
+
         mock_rez_api.create_version.side_effect = [mock_v1, mock_v2]
 
-        response = client.post("/api/v1/versions/compare", json={
-            "version1": "1.2.4",
-            "version2": "1.2.3"
-        })
-        
+        response = client.post(
+            "/api/v1/versions/compare", json={"version1": "1.2.4", "version2": "1.2.3"}
+        )
+
         assert response.status_code == 200
         data = response.json()
         assert data["comparison"] == 1
@@ -144,12 +142,12 @@ class TestVersionsRouterComprehensive:
     def test_compare_versions_attribute_error(self, mock_safe_rez_import, client):
         """Test version comparison with AttributeError."""
         from rez_proxy.core.rez_imports import RezImportError
+
         mock_safe_rez_import.side_effect = RezImportError("Rez is not available")
 
-        response = client.post("/api/v1/versions/compare", json={
-            "version1": "1.2.3",
-            "version2": "1.2.4"
-        })
+        response = client.post(
+            "/api/v1/versions/compare", json={"version1": "1.2.3", "version2": "1.2.4"}
+        )
 
         assert response.status_code == 503
         assert "Rez is not available" in response.json()["detail"]
@@ -159,10 +157,10 @@ class TestVersionsRouterComprehensive:
         """Test version comparison with general error."""
         mock_rez_api.create_version.side_effect = Exception("Version error")
 
-        response = client.post("/api/v1/versions/compare", json={
-            "version1": "invalid1",
-            "version2": "invalid2"
-        })
+        response = client.post(
+            "/api/v1/versions/compare",
+            json={"version1": "invalid1", "version2": "invalid2"},
+        )
 
         assert response.status_code == 400
         assert "Failed to compare versions" in response.json()["detail"]
@@ -178,9 +176,9 @@ class TestVersionsRouterComprehensive:
         mock_req.range.__str__ = Mock(return_value="3.8+")  # Rez format
         mock_rez_api.create_requirement.return_value = mock_req
 
-        response = client.post("/api/v1/versions/requirements/parse", json={
-            "requirement": "python>=3.8"
-        })
+        response = client.post(
+            "/api/v1/versions/requirements/parse", json={"requirement": "python>=3.8"}
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -199,9 +197,9 @@ class TestVersionsRouterComprehensive:
         mock_req.range = None
         mock_rez_api.create_requirement.return_value = mock_req
 
-        response = client.post("/api/v1/versions/requirements/parse", json={
-            "requirement": "python"
-        })
+        response = client.post(
+            "/api/v1/versions/requirements/parse", json={"requirement": "python"}
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -215,9 +213,10 @@ class TestVersionsRouterComprehensive:
         """Test parsing invalid requirement."""
         mock_rez_api.create_requirement.side_effect = Exception("Invalid requirement")
 
-        response = client.post("/api/v1/versions/requirements/parse", json={
-            "requirement": "invalid-requirement"
-        })
+        response = client.post(
+            "/api/v1/versions/requirements/parse",
+            json={"requirement": "invalid-requirement"},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -230,11 +229,12 @@ class TestVersionsRouterComprehensive:
     def test_parse_requirement_attribute_error(self, mock_safe_rez_import, client):
         """Test requirement parsing with AttributeError."""
         from rez_proxy.core.rez_imports import RezImportError
+
         mock_safe_rez_import.side_effect = RezImportError("Rez is not available")
 
-        response = client.post("/api/v1/versions/requirements/parse", json={
-            "requirement": "python>=3.8"
-        })
+        response = client.post(
+            "/api/v1/versions/requirements/parse", json={"requirement": "python>=3.8"}
+        )
 
         assert response.status_code == 503
         assert "Rez is not available" in response.json()["detail"]
@@ -257,10 +257,10 @@ class TestVersionsRouterComprehensive:
         mock_rez_api.create_requirement.return_value = mock_req
         mock_rez_api.create_version.return_value = mock_ver
 
-        response = client.post("/api/v1/versions/requirements/check", params={
-            "requirement": "python>=3.8",
-            "version": "3.9.0"
-        })
+        response = client.post(
+            "/api/v1/versions/requirements/check",
+            params={"requirement": "python>=3.8", "version": "3.9.0"},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -276,19 +276,19 @@ class TestVersionsRouterComprehensive:
         mock_req.__str__ = Mock(return_value="python")
         mock_req.name = "python"
         mock_req.range = None
-        
+
         mock_ver = Mock()
         mock_ver.__str__ = Mock(return_value="3.9.0")
         mock_ver.name = "python"
-        
+
         mock_rez_api.create_requirement.return_value = mock_req
         mock_rez_api.create_version.return_value = mock_ver
 
-        response = client.post("/api/v1/versions/requirements/check", params={
-            "requirement": "python",
-            "version": "3.9.0"
-        })
-        
+        response = client.post(
+            "/api/v1/versions/requirements/check",
+            params={"requirement": "python", "version": "3.9.0"},
+        )
+
         assert response.status_code == 200
         data = response.json()
         assert data["requirement"] == "python"
@@ -296,15 +296,18 @@ class TestVersionsRouterComprehensive:
         assert data["satisfies"] is True
 
     @patch("rez_proxy.core.rez_imports.safe_rez_import")
-    def test_check_requirement_satisfaction_attribute_error(self, mock_safe_rez_import, client):
+    def test_check_requirement_satisfaction_attribute_error(
+        self, mock_safe_rez_import, client
+    ):
         """Test requirement satisfaction check with AttributeError."""
         from rez_proxy.core.rez_imports import RezImportError
+
         mock_safe_rez_import.side_effect = RezImportError("Rez is not available")
 
-        response = client.post("/api/v1/versions/requirements/check", params={
-            "requirement": "python>=3.8",
-            "version": "3.9.0"
-        })
+        response = client.post(
+            "/api/v1/versions/requirements/check",
+            params={"requirement": "python>=3.8", "version": "3.9.0"},
+        )
 
         assert response.status_code == 503
         assert "Rez is not available" in response.json()["detail"]
@@ -314,10 +317,10 @@ class TestVersionsRouterComprehensive:
         """Test requirement satisfaction check with general error."""
         mock_rez_api.create_requirement.side_effect = Exception("Requirement error")
 
-        response = client.post("/api/v1/versions/requirements/check", params={
-            "requirement": "invalid",
-            "version": "invalid"
-        })
+        response = client.post(
+            "/api/v1/versions/requirements/check",
+            params={"requirement": "invalid", "version": "invalid"},
+        )
 
         assert response.status_code == 400
         assert "Failed to check requirement" in response.json()["detail"]
@@ -344,7 +347,9 @@ class TestVersionsRouterComprehensive:
         mock_rez_api.iter_packages.side_effect = mock_iter_packages
 
         # Use correct query parameter format for list
-        response = client.get("/api/v1/versions/latest?packages=python&packages=numpy&limit=10")
+        response = client.get(
+            "/api/v1/versions/latest?packages=python&packages=numpy&limit=10"
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -368,6 +373,7 @@ class TestVersionsRouterComprehensive:
     def test_get_latest_versions_attribute_error(self, mock_safe_rez_import, client):
         """Test latest versions with AttributeError."""
         from rez_proxy.core.rez_imports import RezImportError
+
         mock_safe_rez_import.side_effect = RezImportError("Rez is not available")
 
         response = client.get("/api/v1/versions/latest?packages=python&limit=10")

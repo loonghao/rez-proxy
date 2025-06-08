@@ -5,7 +5,7 @@ Version and requirement API endpoints.
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from rez_proxy.core.rez_imports import rez_api, requires_rez
+from rez_proxy.core.rez_imports import requires_rez, rez_api
 
 router = APIRouter()
 
@@ -122,7 +122,9 @@ async def parse_requirement(request: RequirementRequest) -> RequirementResponse:
         return RequirementResponse(
             requirement=str(req),
             name=getattr(req, "name", ""),
-            range=str(getattr(req, "range", None)) if hasattr(req, "range") and req.range else None,
+            range=str(getattr(req, "range", None))
+            if hasattr(req, "range") and req.range
+            else None,
             is_valid=True,
         )
     except AttributeError as e:
@@ -154,7 +156,7 @@ async def check_requirement_satisfaction(
         if hasattr(req, "range") and req.range:
             satisfies = ver in req.range
         elif hasattr(req, "name") and hasattr(ver, "name"):
-            satisfies = (ver.name == req.name)
+            satisfies = ver.name == req.name
 
         return {
             "requirement": str(req),
@@ -186,12 +188,14 @@ async def get_latest_versions(
                 latest_version = None
 
                 for package in packages_iter:
-                    if latest_version is None or (hasattr(package, "version") and package.version > latest_version):
+                    if latest_version is None or (
+                        hasattr(package, "version") and package.version > latest_version
+                    ):
                         latest_version = package.version
                     break  # iter_packages returns in descending order
 
                 results[package_name] = str(latest_version) if latest_version else None
-            except AttributeError as e:
+            except AttributeError:
                 # Rez API not available
                 results[package_name] = None
             except Exception:

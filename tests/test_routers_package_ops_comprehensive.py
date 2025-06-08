@@ -6,24 +6,25 @@ testing all major functionality including package installation, uninstallation,
 updates, validation, repair, copy, move, and operation management.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
-from fastapi.testclient import TestClient
+
+import pytest
 from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 from rez_proxy.routers.package_ops import (
-    router,
     PackageOpsService,
-    package_ops_service,
+    copy_package_impl,
+    get_operation_status_impl,
     install_package_impl,
+    list_operations_impl,
+    move_package_impl,
+    package_ops_service,
+    repair_package_impl,
+    router,
     uninstall_package_impl,
     update_package_impl,
     validate_package_impl,
-    repair_package_impl,
-    copy_package_impl,
-    move_package_impl,
-    list_operations_impl,
-    get_operation_status_impl,
 )
 
 
@@ -78,12 +79,14 @@ class TestPackageOpsService:
         request = {
             "package_name": "test-package",
             "version": "1.0.0",
-            "repository": "local-repo"
+            "repository": "local-repo",
         }
-        
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.install_package(request)
-            
+
             assert result["status"] == "success"
             assert result["package_name"] == "test-package"
             assert result["version"] == "1.0.0"
@@ -94,31 +97,36 @@ class TestPackageOpsService:
     def test_install_package_local_mode_no_version(self, service, mock_local_mode):
         """Test package installation in local mode without version."""
         request = {"package_name": "test-package"}
-        
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.install_package(request)
-            
+
             assert result["status"] == "success"
             assert result["version"] == "latest"
 
     def test_install_package_local_mode_exception(self, service, mock_local_mode):
         """Test package installation in local mode with exception."""
         request = {"package_name": "test-package"}
-        
-        with patch.object(service, "get_platform_specific_config", side_effect=Exception("Platform error")):
+
+        with patch.object(
+            service,
+            "get_platform_specific_config",
+            side_effect=Exception("Platform error"),
+        ):
             with pytest.raises(Exception, match="Failed to install package"):
                 service.install_package(request)
 
     def test_install_package_remote_mode(self, service, mock_remote_mode):
         """Test package installation in remote mode."""
-        request = {
-            "package_name": "test-package",
-            "version": "1.0.0"
-        }
-        
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+        request = {"package_name": "test-package", "version": "1.0.0"}
+
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.install_package(request)
-            
+
             assert result["status"] == "success"
             assert result["package_name"] == "test-package"
             assert result["version"] == "1.0.0"
@@ -131,10 +139,14 @@ class TestPackageOpsService:
                 mock_package = MagicMock()
                 mock_get_package.return_value = mock_package
                 mock_version.return_value = "1.0.0"
-                
-                with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+
+                with patch.object(
+                    service,
+                    "get_platform_specific_config",
+                    return_value={"platform": "linux"},
+                ):
                     result = service.uninstall_package("test-package", "1.0.0")
-                    
+
                     assert result["status"] == "success"
                     assert result["package_name"] == "test-package"
                     assert result["version"] == "1.0.0"
@@ -147,30 +159,43 @@ class TestPackageOpsService:
                 result = service.uninstall_package("test-package", "1.0.0")
                 assert result is None
 
-    def test_uninstall_package_local_mode_exception_in_get_package(self, service, mock_local_mode):
+    def test_uninstall_package_local_mode_exception_in_get_package(
+        self, service, mock_local_mode
+    ):
         """Test package uninstallation in local mode - exception in get_package."""
-        with patch("rez_proxy.routers.package_ops.get_package", side_effect=Exception("Package error")):
+        with patch(
+            "rez_proxy.routers.package_ops.get_package",
+            side_effect=Exception("Package error"),
+        ):
             with patch("rez_proxy.routers.package_ops.Version"):
                 result = service.uninstall_package("test-package", "1.0.0")
                 assert result is None
 
-    def test_uninstall_package_local_mode_general_exception(self, service, mock_local_mode):
+    def test_uninstall_package_local_mode_general_exception(
+        self, service, mock_local_mode
+    ):
         """Test package uninstallation in local mode - general exception."""
         with patch("rez_proxy.routers.package_ops.get_package") as mock_get_package:
             with patch("rez_proxy.routers.package_ops.Version") as mock_version:
                 mock_package = MagicMock()
                 mock_get_package.return_value = mock_package
                 mock_version.return_value = "1.0.0"
-                
-                with patch.object(service, "get_platform_specific_config", side_effect=Exception("Platform error")):
+
+                with patch.object(
+                    service,
+                    "get_platform_specific_config",
+                    side_effect=Exception("Platform error"),
+                ):
                     with pytest.raises(Exception, match="Failed to uninstall package"):
                         service.uninstall_package("test-package", "1.0.0")
 
     def test_uninstall_package_remote_mode(self, service, mock_remote_mode):
         """Test package uninstallation in remote mode."""
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.uninstall_package("test-package", "1.0.0")
-            
+
             assert result["status"] == "success"
             assert result["package_name"] == "test-package"
             assert result["version"] == "1.0.0"
@@ -179,38 +204,48 @@ class TestPackageOpsService:
     def test_update_package_local_mode_success(self, service, mock_local_mode):
         """Test package update in local mode - success."""
         request = {"target_version": "2.0.0"}
-        
+
         with patch("rez_proxy.routers.package_ops.iter_packages") as mock_iter_packages:
             mock_package = MagicMock()
             mock_package.version = "1.0.0"
             mock_iter_packages.return_value = [mock_package]
-            
-            with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+
+            with patch.object(
+                service,
+                "get_platform_specific_config",
+                return_value={"platform": "linux"},
+            ):
                 result = service.update_package("test-package", request)
-                
+
                 assert result["status"] == "success"
                 assert result["package_name"] == "test-package"
                 assert result["current_version"] == "1.0.0"
                 assert result["target_version"] == "2.0.0"
 
-    def test_update_package_local_mode_no_target_version(self, service, mock_local_mode):
+    def test_update_package_local_mode_no_target_version(
+        self, service, mock_local_mode
+    ):
         """Test package update in local mode without target version."""
         request = {}
-        
+
         with patch("rez_proxy.routers.package_ops.iter_packages") as mock_iter_packages:
             mock_package = MagicMock()
             mock_package.version = "1.0.0"
             mock_iter_packages.return_value = [mock_package]
-            
-            with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+
+            with patch.object(
+                service,
+                "get_platform_specific_config",
+                return_value={"platform": "linux"},
+            ):
                 result = service.update_package("test-package", request)
-                
+
                 assert result["target_version"] == "latest"
 
     def test_update_package_local_mode_not_found(self, service, mock_local_mode):
         """Test package update in local mode - package not found."""
         request = {"target_version": "2.0.0"}
-        
+
         with patch("rez_proxy.routers.package_ops.iter_packages", return_value=[]):
             result = service.update_package("test-package", request)
             assert result is None
@@ -218,28 +253,37 @@ class TestPackageOpsService:
     def test_update_package_local_mode_exception(self, service, mock_local_mode):
         """Test package update in local mode - exception."""
         request = {"target_version": "2.0.0"}
-        
-        with patch("rez_proxy.routers.package_ops.iter_packages", side_effect=Exception("Package error")):
+
+        with patch(
+            "rez_proxy.routers.package_ops.iter_packages",
+            side_effect=Exception("Package error"),
+        ):
             with pytest.raises(Exception, match="Failed to update package"):
                 service.update_package("test-package", request)
 
     def test_update_package_remote_mode(self, service, mock_remote_mode):
         """Test package update in remote mode."""
         request = {"target_version": "2.0.0"}
-        
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.update_package("test-package", request)
-            
+
             assert result["status"] == "success"
             assert result["package_name"] == "test-package"
             assert result["target_version"] == "2.0.0"
             assert "Remote mode" in result["message"]
 
-    def test_update_package_remote_mode_no_target_version(self, service, mock_remote_mode):
+    def test_update_package_remote_mode_no_target_version(
+        self, service, mock_remote_mode
+    ):
         """Test package update in remote mode without target version."""
         request = {}
 
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.update_package("test-package", request)
 
             assert result["target_version"] == "latest"
@@ -254,7 +298,11 @@ class TestPackageOpsService:
                 mock_get_package.return_value = mock_package
                 mock_version.return_value = "1.0.0"
 
-                with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+                with patch.object(
+                    service,
+                    "get_platform_specific_config",
+                    return_value={"platform": "linux"},
+                ):
                     result = service.validate_package("test-package", "1.0.0")
 
                     assert result["valid"] is True
@@ -274,7 +322,11 @@ class TestPackageOpsService:
                 mock_get_package.return_value = mock_package
                 mock_version.return_value = "1.0.0"
 
-                with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+                with patch.object(
+                    service,
+                    "get_platform_specific_config",
+                    return_value={"platform": "linux"},
+                ):
                     result = service.validate_package("test-package", "1.0.0")
 
                     assert result["valid"] is True  # No errors, just warnings
@@ -289,14 +341,21 @@ class TestPackageOpsService:
                 result = service.validate_package("test-package", "1.0.0")
                 assert result is None
 
-    def test_validate_package_local_mode_exception_in_get_package(self, service, mock_local_mode):
+    def test_validate_package_local_mode_exception_in_get_package(
+        self, service, mock_local_mode
+    ):
         """Test package validation in local mode - exception in get_package."""
-        with patch("rez_proxy.routers.package_ops.get_package", side_effect=Exception("Package error")):
+        with patch(
+            "rez_proxy.routers.package_ops.get_package",
+            side_effect=Exception("Package error"),
+        ):
             with patch("rez_proxy.routers.package_ops.Version"):
                 result = service.validate_package("test-package", "1.0.0")
                 assert result is None
 
-    def test_validate_package_local_mode_general_exception(self, service, mock_local_mode):
+    def test_validate_package_local_mode_general_exception(
+        self, service, mock_local_mode
+    ):
         """Test package validation in local mode - general exception."""
         with patch("rez_proxy.routers.package_ops.get_package") as mock_get_package:
             with patch("rez_proxy.routers.package_ops.Version") as mock_version:
@@ -304,13 +363,19 @@ class TestPackageOpsService:
                 mock_get_package.return_value = mock_package
                 mock_version.return_value = "1.0.0"
 
-                with patch.object(service, "get_platform_specific_config", side_effect=Exception("Platform error")):
+                with patch.object(
+                    service,
+                    "get_platform_specific_config",
+                    side_effect=Exception("Platform error"),
+                ):
                     with pytest.raises(Exception, match="Failed to validate package"):
                         service.validate_package("test-package", "1.0.0")
 
     def test_validate_package_remote_mode(self, service, mock_remote_mode):
         """Test package validation in remote mode."""
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.validate_package("test-package", "1.0.0")
 
             assert result["valid"] is True
@@ -325,7 +390,7 @@ class TestPackageOpsService:
         request = {
             "fix_permissions": True,
             "rebuild_metadata": True,
-            "verify_dependencies": True
+            "verify_dependencies": True,
         }
 
         with patch("rez_proxy.routers.package_ops.get_package") as mock_get_package:
@@ -334,13 +399,19 @@ class TestPackageOpsService:
                 mock_get_package.return_value = mock_package
                 mock_version.return_value = "1.0.0"
 
-                with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+                with patch.object(
+                    service,
+                    "get_platform_specific_config",
+                    return_value={"platform": "linux"},
+                ):
                     result = service.repair_package("test-package", "1.0.0", request)
 
                     assert result["status"] == "success"
                     assert result["package_name"] == "test-package"
                     assert result["version"] == "1.0.0"
-                    assert result["issues_found"] == 2  # fix_permissions and rebuild_metadata
+                    assert (
+                        result["issues_found"] == 2
+                    )  # fix_permissions and rebuild_metadata
                     assert result["issues_fixed"] == 2
                     assert len(result["repairs_performed"]) == 3
 
@@ -354,7 +425,11 @@ class TestPackageOpsService:
                 mock_get_package.return_value = mock_package
                 mock_version.return_value = "1.0.0"
 
-                with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+                with patch.object(
+                    service,
+                    "get_platform_specific_config",
+                    return_value={"platform": "linux"},
+                ):
                     result = service.repair_package("test-package", "1.0.0", request)
 
                     assert result["issues_found"] == 0
@@ -371,16 +446,23 @@ class TestPackageOpsService:
                 result = service.repair_package("test-package", "1.0.0", request)
                 assert result is None
 
-    def test_repair_package_local_mode_exception_in_get_package(self, service, mock_local_mode):
+    def test_repair_package_local_mode_exception_in_get_package(
+        self, service, mock_local_mode
+    ):
         """Test package repair in local mode - exception in get_package."""
         request = {"fix_permissions": True}
 
-        with patch("rez_proxy.routers.package_ops.get_package", side_effect=Exception("Package error")):
+        with patch(
+            "rez_proxy.routers.package_ops.get_package",
+            side_effect=Exception("Package error"),
+        ):
             with patch("rez_proxy.routers.package_ops.Version"):
                 result = service.repair_package("test-package", "1.0.0", request)
                 assert result is None
 
-    def test_repair_package_local_mode_general_exception(self, service, mock_local_mode):
+    def test_repair_package_local_mode_general_exception(
+        self, service, mock_local_mode
+    ):
         """Test package repair in local mode - general exception."""
         request = {"fix_permissions": True}
 
@@ -390,7 +472,11 @@ class TestPackageOpsService:
                 mock_get_package.return_value = mock_package
                 mock_version.return_value = "1.0.0"
 
-                with patch.object(service, "get_platform_specific_config", side_effect=Exception("Platform error")):
+                with patch.object(
+                    service,
+                    "get_platform_specific_config",
+                    side_effect=Exception("Platform error"),
+                ):
                     with pytest.raises(Exception, match="Failed to repair package"):
                         service.repair_package("test-package", "1.0.0", request)
 
@@ -398,7 +484,9 @@ class TestPackageOpsService:
         """Test package repair in remote mode."""
         request = {"fix_permissions": True}
 
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.repair_package("test-package", "1.0.0", request)
 
             assert result["status"] == "success"
@@ -414,10 +502,12 @@ class TestPackageOpsService:
             "source_package": "test-package",
             "source_version": "1.0.0",
             "target_repository": "target-repo",
-            "target_version": "1.1.0"
+            "target_version": "1.1.0",
         }
 
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.copy_package(request)
 
             assert result["status"] == "success"
@@ -432,23 +522,31 @@ class TestPackageOpsService:
         request = {
             "source_package": "test-package",
             "source_version": "1.0.0",
-            "target_repository": "target-repo"
+            "target_repository": "target-repo",
         }
 
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.copy_package(request)
 
-            assert result["target_version"] == "1.0.0"  # Should default to source_version
+            assert (
+                result["target_version"] == "1.0.0"
+            )  # Should default to source_version
 
     def test_copy_package_local_mode_exception(self, service, mock_local_mode):
         """Test package copy in local mode - exception."""
         request = {
             "source_package": "test-package",
             "source_version": "1.0.0",
-            "target_repository": "target-repo"
+            "target_repository": "target-repo",
         }
 
-        with patch.object(service, "get_platform_specific_config", side_effect=Exception("Platform error")):
+        with patch.object(
+            service,
+            "get_platform_specific_config",
+            side_effect=Exception("Platform error"),
+        ):
             with pytest.raises(Exception, match="Failed to copy package"):
                 service.copy_package(request)
 
@@ -457,10 +555,12 @@ class TestPackageOpsService:
         request = {
             "source_package": "test-package",
             "source_version": "1.0.0",
-            "target_repository": "target-repo"
+            "target_repository": "target-repo",
         }
 
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.copy_package(request)
 
             assert result["status"] == "success"
@@ -475,10 +575,12 @@ class TestPackageOpsService:
             "source_package": "test-package",
             "source_version": "1.0.0",
             "target_repository": "target-repo",
-            "remove_source": True
+            "remove_source": True,
         }
 
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.move_package(request)
 
             assert result["status"] == "success"
@@ -488,15 +590,19 @@ class TestPackageOpsService:
             assert result["remove_source"] is True
             assert "moved successfully" in result["message"]
 
-    def test_move_package_local_mode_default_remove_source(self, service, mock_local_mode):
+    def test_move_package_local_mode_default_remove_source(
+        self, service, mock_local_mode
+    ):
         """Test package move in local mode with default remove_source."""
         request = {
             "source_package": "test-package",
             "source_version": "1.0.0",
-            "target_repository": "target-repo"
+            "target_repository": "target-repo",
         }
 
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.move_package(request)
 
             assert result["remove_source"] is True  # Should default to True
@@ -506,10 +612,14 @@ class TestPackageOpsService:
         request = {
             "source_package": "test-package",
             "source_version": "1.0.0",
-            "target_repository": "target-repo"
+            "target_repository": "target-repo",
         }
 
-        with patch.object(service, "get_platform_specific_config", side_effect=Exception("Platform error")):
+        with patch.object(
+            service,
+            "get_platform_specific_config",
+            side_effect=Exception("Platform error"),
+        ):
             with pytest.raises(Exception, match="Failed to move package"):
                 service.move_package(request)
 
@@ -518,10 +628,12 @@ class TestPackageOpsService:
         request = {
             "source_package": "test-package",
             "source_version": "1.0.0",
-            "target_repository": "target-repo"
+            "target_repository": "target-repo",
         }
 
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.move_package(request)
 
             assert result["status"] == "success"
@@ -532,7 +644,9 @@ class TestPackageOpsService:
 
     def test_list_operations(self, service):
         """Test listing operations."""
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.list_operations()
 
             assert "operations" in result
@@ -549,7 +663,9 @@ class TestPackageOpsService:
 
     def test_get_operation_status_found_completed(self, service):
         """Test getting operation status - found completed operation."""
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.get_operation_status("op_001")
 
             assert result["operation_id"] == "op_001"
@@ -560,7 +676,9 @@ class TestPackageOpsService:
 
     def test_get_operation_status_found_in_progress(self, service):
         """Test getting operation status - found in-progress operation."""
-        with patch.object(service, "get_platform_specific_config", return_value={"platform": "linux"}):
+        with patch.object(
+            service, "get_platform_specific_config", return_value={"platform": "linux"}
+        ):
             result = service.get_operation_status("op_002")
 
             assert result["operation_id"] == "op_002"
@@ -670,7 +788,9 @@ class TestImplementationFunctions:
 
     def test_get_operation_status_impl(self, mock_local_mode):
         """Test get_operation_status_impl function."""
-        with patch.object(package_ops_service, "get_operation_status") as mock_get_status:
+        with patch.object(
+            package_ops_service, "get_operation_status"
+        ) as mock_get_status:
             mock_get_status.return_value = {"operation_id": "op_001"}
 
             result = get_operation_status_impl("op_001")
@@ -687,13 +807,18 @@ class TestAPIEndpoints:
         request_data = {
             "package_name": "test-package",
             "version": "1.0.0",
-            "repository": "local-repo"
+            "repository": "local-repo",
         }
 
         with patch("rez_proxy.routers.package_ops.install_package_impl") as mock_impl:
-            mock_impl.return_value = {"status": "success", "package_name": "test-package"}
+            mock_impl.return_value = {
+                "status": "success",
+                "package_name": "test-package",
+            }
 
-            with patch.object(package_ops_service, "get_platform_info") as mock_platform:
+            with patch.object(
+                package_ops_service, "get_platform_info"
+            ) as mock_platform:
                 mock_platform.return_value = MagicMock(platform="linux")
 
                 response = client.post("/api/v1/package-ops/install", json=request_data)
@@ -708,7 +833,10 @@ class TestAPIEndpoints:
         """Test install package endpoint - exception."""
         request_data = {"package_name": "test-package"}
 
-        with patch("rez_proxy.routers.package_ops.install_package_impl", side_effect=Exception("Install error")):
+        with patch(
+            "rez_proxy.routers.package_ops.install_package_impl",
+            side_effect=Exception("Install error"),
+        ):
             response = client.post("/api/v1/package-ops/install", json=request_data)
 
             assert response.status_code == 500
@@ -717,12 +845,19 @@ class TestAPIEndpoints:
     def test_uninstall_package_endpoint_success(self, client, mock_context):
         """Test uninstall package endpoint - success."""
         with patch("rez_proxy.routers.package_ops.uninstall_package_impl") as mock_impl:
-            mock_impl.return_value = {"status": "success", "package_name": "test-package"}
+            mock_impl.return_value = {
+                "status": "success",
+                "package_name": "test-package",
+            }
 
-            with patch.object(package_ops_service, "get_platform_info") as mock_platform:
+            with patch.object(
+                package_ops_service, "get_platform_info"
+            ) as mock_platform:
                 mock_platform.return_value = MagicMock(platform="linux")
 
-                response = client.delete("/api/v1/package-ops/uninstall/test-package/1.0.0")
+                response = client.delete(
+                    "/api/v1/package-ops/uninstall/test-package/1.0.0"
+                )
 
                 assert response.status_code == 200
                 result = response.json()
@@ -731,7 +866,9 @@ class TestAPIEndpoints:
 
     def test_uninstall_package_endpoint_not_found(self, client, mock_context):
         """Test uninstall package endpoint - package not found."""
-        with patch("rez_proxy.routers.package_ops.uninstall_package_impl", return_value=None):
+        with patch(
+            "rez_proxy.routers.package_ops.uninstall_package_impl", return_value=None
+        ):
             response = client.delete("/api/v1/package-ops/uninstall/test-package/1.0.0")
 
             assert response.status_code == 404
@@ -739,7 +876,10 @@ class TestAPIEndpoints:
 
     def test_uninstall_package_endpoint_exception(self, client, mock_context):
         """Test uninstall package endpoint - exception."""
-        with patch("rez_proxy.routers.package_ops.uninstall_package_impl", side_effect=Exception("Uninstall error")):
+        with patch(
+            "rez_proxy.routers.package_ops.uninstall_package_impl",
+            side_effect=Exception("Uninstall error"),
+        ):
             response = client.delete("/api/v1/package-ops/uninstall/test-package/1.0.0")
 
             assert response.status_code == 500
@@ -750,9 +890,14 @@ class TestAPIEndpoints:
         request_data = {"target_version": "2.0.0"}
 
         with patch("rez_proxy.routers.package_ops.update_package_impl") as mock_impl:
-            mock_impl.return_value = {"status": "success", "package_name": "test-package"}
+            mock_impl.return_value = {
+                "status": "success",
+                "package_name": "test-package",
+            }
 
-            response = client.put("/api/v1/package-ops/update/test-package", json=request_data)
+            response = client.put(
+                "/api/v1/package-ops/update/test-package", json=request_data
+            )
 
             assert response.status_code == 200
             result = response.json()
@@ -762,8 +907,12 @@ class TestAPIEndpoints:
         """Test update package endpoint - package not found."""
         request_data = {"target_version": "2.0.0"}
 
-        with patch("rez_proxy.routers.package_ops.update_package_impl", return_value=None):
-            response = client.put("/api/v1/package-ops/update/test-package", json=request_data)
+        with patch(
+            "rez_proxy.routers.package_ops.update_package_impl", return_value=None
+        ):
+            response = client.put(
+                "/api/v1/package-ops/update/test-package", json=request_data
+            )
 
             assert response.status_code == 404
             assert "not found" in response.json()["detail"]
@@ -772,8 +921,13 @@ class TestAPIEndpoints:
         """Test update package endpoint - not implemented."""
         request_data = {"target_version": "2.0.0"}
 
-        with patch("rez_proxy.routers.package_ops.update_package_impl", side_effect=NotImplementedError()):
-            response = client.put("/api/v1/package-ops/update/test-package", json=request_data)
+        with patch(
+            "rez_proxy.routers.package_ops.update_package_impl",
+            side_effect=NotImplementedError(),
+        ):
+            response = client.put(
+                "/api/v1/package-ops/update/test-package", json=request_data
+            )
 
             assert response.status_code == 200
             result = response.json()
@@ -783,8 +937,13 @@ class TestAPIEndpoints:
         """Test update package endpoint - exception."""
         request_data = {"target_version": "2.0.0"}
 
-        with patch("rez_proxy.routers.package_ops.update_package_impl", side_effect=Exception("Update error")):
-            response = client.put("/api/v1/package-ops/update/test-package", json=request_data)
+        with patch(
+            "rez_proxy.routers.package_ops.update_package_impl",
+            side_effect=Exception("Update error"),
+        ):
+            response = client.put(
+                "/api/v1/package-ops/update/test-package", json=request_data
+            )
 
             assert response.status_code == 500
             assert "Failed to update package" in response.json()["detail"]
@@ -802,7 +961,9 @@ class TestAPIEndpoints:
 
     def test_validate_package_endpoint_not_found(self, client, mock_context):
         """Test validate package endpoint - package not found."""
-        with patch("rez_proxy.routers.package_ops.validate_package_impl", return_value=None):
+        with patch(
+            "rez_proxy.routers.package_ops.validate_package_impl", return_value=None
+        ):
             response = client.get("/api/v1/package-ops/validate/test-package/1.0.0")
 
             assert response.status_code == 404
@@ -810,7 +971,10 @@ class TestAPIEndpoints:
 
     def test_validate_package_endpoint_not_implemented(self, client, mock_context):
         """Test validate package endpoint - not implemented."""
-        with patch("rez_proxy.routers.package_ops.validate_package_impl", side_effect=NotImplementedError()):
+        with patch(
+            "rez_proxy.routers.package_ops.validate_package_impl",
+            side_effect=NotImplementedError(),
+        ):
             response = client.get("/api/v1/package-ops/validate/test-package/1.0.0")
 
             assert response.status_code == 200
@@ -819,7 +983,10 @@ class TestAPIEndpoints:
 
     def test_validate_package_endpoint_exception(self, client, mock_context):
         """Test validate package endpoint - exception."""
-        with patch("rez_proxy.routers.package_ops.validate_package_impl", side_effect=Exception("Validate error")):
+        with patch(
+            "rez_proxy.routers.package_ops.validate_package_impl",
+            side_effect=Exception("Validate error"),
+        ):
             response = client.get("/api/v1/package-ops/validate/test-package/1.0.0")
 
             assert response.status_code == 500
@@ -830,9 +997,14 @@ class TestAPIEndpoints:
         request_data = {"fix_permissions": True}
 
         with patch("rez_proxy.routers.package_ops.repair_package_impl") as mock_impl:
-            mock_impl.return_value = {"status": "success", "package_name": "test-package"}
+            mock_impl.return_value = {
+                "status": "success",
+                "package_name": "test-package",
+            }
 
-            response = client.post("/api/v1/package-ops/repair/test-package/1.0.0", json=request_data)
+            response = client.post(
+                "/api/v1/package-ops/repair/test-package/1.0.0", json=request_data
+            )
 
             assert response.status_code == 200
             result = response.json()
@@ -842,8 +1014,12 @@ class TestAPIEndpoints:
         """Test repair package endpoint - package not found."""
         request_data = {"fix_permissions": True}
 
-        with patch("rez_proxy.routers.package_ops.repair_package_impl", return_value=None):
-            response = client.post("/api/v1/package-ops/repair/test-package/1.0.0", json=request_data)
+        with patch(
+            "rez_proxy.routers.package_ops.repair_package_impl", return_value=None
+        ):
+            response = client.post(
+                "/api/v1/package-ops/repair/test-package/1.0.0", json=request_data
+            )
 
             assert response.status_code == 404
             assert "not found" in response.json()["detail"]
@@ -852,8 +1028,13 @@ class TestAPIEndpoints:
         """Test repair package endpoint - not implemented."""
         request_data = {"fix_permissions": True}
 
-        with patch("rez_proxy.routers.package_ops.repair_package_impl", side_effect=NotImplementedError()):
-            response = client.post("/api/v1/package-ops/repair/test-package/1.0.0", json=request_data)
+        with patch(
+            "rez_proxy.routers.package_ops.repair_package_impl",
+            side_effect=NotImplementedError(),
+        ):
+            response = client.post(
+                "/api/v1/package-ops/repair/test-package/1.0.0", json=request_data
+            )
 
             assert response.status_code == 200
             result = response.json()
@@ -863,8 +1044,13 @@ class TestAPIEndpoints:
         """Test repair package endpoint - exception."""
         request_data = {"fix_permissions": True}
 
-        with patch("rez_proxy.routers.package_ops.repair_package_impl", side_effect=Exception("Repair error")):
-            response = client.post("/api/v1/package-ops/repair/test-package/1.0.0", json=request_data)
+        with patch(
+            "rez_proxy.routers.package_ops.repair_package_impl",
+            side_effect=Exception("Repair error"),
+        ):
+            response = client.post(
+                "/api/v1/package-ops/repair/test-package/1.0.0", json=request_data
+            )
 
             assert response.status_code == 500
             assert "Failed to repair package" in response.json()["detail"]
@@ -882,7 +1068,10 @@ class TestAPIEndpoints:
 
     def test_list_operations_endpoint_not_implemented(self, client, mock_context):
         """Test list operations endpoint - not implemented."""
-        with patch("rez_proxy.routers.package_ops.list_operations_impl", side_effect=NotImplementedError()):
+        with patch(
+            "rez_proxy.routers.package_ops.list_operations_impl",
+            side_effect=NotImplementedError(),
+        ):
             response = client.get("/api/v1/package-ops/operations")
 
             assert response.status_code == 200
@@ -891,7 +1080,10 @@ class TestAPIEndpoints:
 
     def test_list_operations_endpoint_exception(self, client, mock_context):
         """Test list operations endpoint - exception."""
-        with patch("rez_proxy.routers.package_ops.list_operations_impl", side_effect=Exception("List error")):
+        with patch(
+            "rez_proxy.routers.package_ops.list_operations_impl",
+            side_effect=Exception("List error"),
+        ):
             response = client.get("/api/v1/package-ops/operations")
 
             assert response.status_code == 500
@@ -899,7 +1091,9 @@ class TestAPIEndpoints:
 
     def test_get_operation_status_endpoint_success(self, client, mock_context):
         """Test get operation status endpoint - success."""
-        with patch("rez_proxy.routers.package_ops.get_operation_status_impl") as mock_impl:
+        with patch(
+            "rez_proxy.routers.package_ops.get_operation_status_impl"
+        ) as mock_impl:
             mock_impl.return_value = {"operation_id": "op_001", "status": "completed"}
 
             response = client.get("/api/v1/package-ops/operations/op_001")
@@ -910,7 +1104,9 @@ class TestAPIEndpoints:
 
     def test_get_operation_status_endpoint_not_found(self, client, mock_context):
         """Test get operation status endpoint - not found."""
-        with patch("rez_proxy.routers.package_ops.get_operation_status_impl", return_value=None):
+        with patch(
+            "rez_proxy.routers.package_ops.get_operation_status_impl", return_value=None
+        ):
             response = client.get("/api/v1/package-ops/operations/nonexistent")
 
             assert response.status_code == 404
@@ -918,7 +1114,10 @@ class TestAPIEndpoints:
 
     def test_get_operation_status_endpoint_not_implemented(self, client, mock_context):
         """Test get operation status endpoint - not implemented."""
-        with patch("rez_proxy.routers.package_ops.get_operation_status_impl", side_effect=NotImplementedError()):
+        with patch(
+            "rez_proxy.routers.package_ops.get_operation_status_impl",
+            side_effect=NotImplementedError(),
+        ):
             response = client.get("/api/v1/package-ops/operations/op_001")
 
             assert response.status_code == 200
@@ -927,7 +1126,10 @@ class TestAPIEndpoints:
 
     def test_get_operation_status_endpoint_exception(self, client, mock_context):
         """Test get operation status endpoint - exception."""
-        with patch("rez_proxy.routers.package_ops.get_operation_status_impl", side_effect=Exception("Status error")):
+        with patch(
+            "rez_proxy.routers.package_ops.get_operation_status_impl",
+            side_effect=Exception("Status error"),
+        ):
             response = client.get("/api/v1/package-ops/operations/op_001")
 
             assert response.status_code == 500
@@ -938,11 +1140,14 @@ class TestAPIEndpoints:
         request_data = {
             "source_package": "test-package",
             "source_version": "1.0.0",
-            "target_repository": "target-repo"
+            "target_repository": "target-repo",
         }
 
         with patch("rez_proxy.routers.package_ops.copy_package_impl") as mock_impl:
-            mock_impl.return_value = {"status": "success", "source_package": "test-package"}
+            mock_impl.return_value = {
+                "status": "success",
+                "source_package": "test-package",
+            }
 
             response = client.post("/api/v1/package-ops/copy", json=request_data)
 
@@ -955,10 +1160,13 @@ class TestAPIEndpoints:
         request_data = {
             "source_package": "test-package",
             "source_version": "1.0.0",
-            "target_repository": "target-repo"
+            "target_repository": "target-repo",
         }
 
-        with patch("rez_proxy.routers.package_ops.copy_package_impl", side_effect=NotImplementedError()):
+        with patch(
+            "rez_proxy.routers.package_ops.copy_package_impl",
+            side_effect=NotImplementedError(),
+        ):
             response = client.post("/api/v1/package-ops/copy", json=request_data)
 
             assert response.status_code == 200
@@ -970,10 +1178,13 @@ class TestAPIEndpoints:
         request_data = {
             "source_package": "test-package",
             "source_version": "1.0.0",
-            "target_repository": "target-repo"
+            "target_repository": "target-repo",
         }
 
-        with patch("rez_proxy.routers.package_ops.copy_package_impl", side_effect=Exception("Copy error")):
+        with patch(
+            "rez_proxy.routers.package_ops.copy_package_impl",
+            side_effect=Exception("Copy error"),
+        ):
             response = client.post("/api/v1/package-ops/copy", json=request_data)
 
             assert response.status_code == 500
@@ -985,11 +1196,14 @@ class TestAPIEndpoints:
             "source_package": "test-package",
             "source_version": "1.0.0",
             "target_repository": "target-repo",
-            "remove_source": True
+            "remove_source": True,
         }
 
         with patch("rez_proxy.routers.package_ops.move_package_impl") as mock_impl:
-            mock_impl.return_value = {"status": "success", "source_package": "test-package"}
+            mock_impl.return_value = {
+                "status": "success",
+                "source_package": "test-package",
+            }
 
             response = client.post("/api/v1/package-ops/move", json=request_data)
 
@@ -1002,10 +1216,13 @@ class TestAPIEndpoints:
         request_data = {
             "source_package": "test-package",
             "source_version": "1.0.0",
-            "target_repository": "target-repo"
+            "target_repository": "target-repo",
         }
 
-        with patch("rez_proxy.routers.package_ops.move_package_impl", side_effect=NotImplementedError()):
+        with patch(
+            "rez_proxy.routers.package_ops.move_package_impl",
+            side_effect=NotImplementedError(),
+        ):
             response = client.post("/api/v1/package-ops/move", json=request_data)
 
             assert response.status_code == 200
@@ -1017,10 +1234,13 @@ class TestAPIEndpoints:
         request_data = {
             "source_package": "test-package",
             "source_version": "1.0.0",
-            "target_repository": "target-repo"
+            "target_repository": "target-repo",
         }
 
-        with patch("rez_proxy.routers.package_ops.move_package_impl", side_effect=Exception("Move error")):
+        with patch(
+            "rez_proxy.routers.package_ops.move_package_impl",
+            side_effect=Exception("Move error"),
+        ):
             response = client.post("/api/v1/package-ops/move", json=request_data)
 
             assert response.status_code == 500
@@ -1035,11 +1255,13 @@ class TestLegacyAPIEndpoints:
         request_data = {
             "source_uri": "package://test-package-1.0.0",
             "dest_repository": "target-repo",
-            "force": False
+            "force": False,
         }
 
         with patch("rez_proxy.routers.package_ops.copy_package") as mock_copy:
-            with patch("rez_proxy.routers.package_ops.package_repository_manager") as mock_repo_mgr:
+            with patch(
+                "rez_proxy.routers.package_ops.package_repository_manager"
+            ) as mock_repo_mgr:
                 mock_repo = MagicMock()
                 mock_repo_mgr.get_repository.return_value = mock_repo
                 mock_result = MagicMock()
@@ -1058,10 +1280,12 @@ class TestLegacyAPIEndpoints:
         request_data = {
             "source_uri": "package://test-package-1.0.0",
             "dest_repository": "nonexistent-repo",
-            "force": False
+            "force": False,
         }
 
-        with patch("rez_proxy.routers.package_ops.package_repository_manager") as mock_repo_mgr:
+        with patch(
+            "rez_proxy.routers.package_ops.package_repository_manager"
+        ) as mock_repo_mgr:
             mock_repo_mgr.get_repository.return_value = None
 
             response = client.post("/api/v1/package-ops/copy", json=request_data)
@@ -1074,11 +1298,16 @@ class TestLegacyAPIEndpoints:
         request_data = {
             "source_uri": "package://test-package-1.0.0",
             "dest_repository": "target-repo",
-            "force": False
+            "force": False,
         }
 
-        with patch("rez_proxy.routers.package_ops.copy_package", side_effect=Exception("Copy failed")):
-            with patch("rez_proxy.routers.package_ops.package_repository_manager") as mock_repo_mgr:
+        with patch(
+            "rez_proxy.routers.package_ops.copy_package",
+            side_effect=Exception("Copy failed"),
+        ):
+            with patch(
+                "rez_proxy.routers.package_ops.package_repository_manager"
+            ) as mock_repo_mgr:
                 mock_repo = MagicMock()
                 mock_repo_mgr.get_repository.return_value = mock_repo
 
@@ -1092,11 +1321,13 @@ class TestLegacyAPIEndpoints:
         request_data = {
             "source_uri": "package://test-package-1.0.0",
             "dest_repository": "target-repo",
-            "force": False
+            "force": False,
         }
 
         with patch("rez_proxy.routers.package_ops.move_package") as mock_move:
-            with patch("rez_proxy.routers.package_ops.package_repository_manager") as mock_repo_mgr:
+            with patch(
+                "rez_proxy.routers.package_ops.package_repository_manager"
+            ) as mock_repo_mgr:
                 mock_repo = MagicMock()
                 mock_repo_mgr.get_repository.return_value = mock_repo
                 mock_result = MagicMock()
@@ -1115,17 +1346,19 @@ class TestLegacyAPIEndpoints:
         request_data = {
             "package_name": "test-package",
             "version": "1.0.0",
-            "force": False
+            "force": False,
         }
 
         with patch("rez_proxy.routers.package_ops.get_package") as mock_get_package:
-            with patch("rez_proxy.routers.package_ops.remove_package") as mock_remove:
+            with patch("rez_proxy.routers.package_ops.remove_package"):
                 with patch("rez_proxy.routers.package_ops.Version") as mock_version:
                     mock_package = MagicMock()
                     mock_get_package.return_value = mock_package
                     mock_version.return_value = "1.0.0"
 
-                    response = client.delete("/api/v1/package-ops/remove", json=request_data)
+                    response = client.delete(
+                        "/api/v1/package-ops/remove", json=request_data
+                    )
 
                     assert response.status_code == 200
                     result = response.json()
@@ -1134,17 +1367,16 @@ class TestLegacyAPIEndpoints:
 
     def test_remove_package_family_success(self, client, mock_context):
         """Test remove package family endpoint - success."""
-        request_data = {
-            "package_name": "test-package",
-            "force": False
-        }
+        request_data = {"package_name": "test-package", "force": False}
 
         with patch("rez_proxy.routers.package_ops.iter_packages") as mock_iter:
-            with patch("rez_proxy.routers.package_ops.remove_package_family") as mock_remove:
+            with patch("rez_proxy.routers.package_ops.remove_package_family"):
                 mock_packages = [MagicMock(), MagicMock()]
                 mock_iter.return_value = mock_packages
 
-                response = client.delete("/api/v1/package-ops/remove", json=request_data)
+                response = client.delete(
+                    "/api/v1/package-ops/remove", json=request_data
+                )
 
                 assert response.status_code == 200
                 result = response.json()
@@ -1157,12 +1389,14 @@ class TestLegacyAPIEndpoints:
         request_data = {
             "package_name": "nonexistent-package",
             "version": "1.0.0",
-            "force": False
+            "force": False,
         }
 
         with patch("rez_proxy.routers.package_ops.get_package", return_value=None):
             with patch("rez_proxy.routers.package_ops.Version"):
-                response = client.delete("/api/v1/package-ops/remove", json=request_data)
+                response = client.delete(
+                    "/api/v1/package-ops/remove", json=request_data
+                )
 
                 assert response.status_code == 404
                 assert "not found" in response.json()["detail"]
@@ -1191,7 +1425,9 @@ class TestLegacyAPIEndpoints:
         """Test get package from URI endpoint - not found."""
         package_uri = "package://nonexistent-package-1.0.0"
 
-        with patch("rez_proxy.routers.package_ops.get_package_from_uri", return_value=None):
+        with patch(
+            "rez_proxy.routers.package_ops.get_package_from_uri", return_value=None
+        ):
             response = client.get(f"/api/v1/package-ops/uri/{package_uri}")
 
             assert response.status_code == 404
@@ -1222,7 +1458,9 @@ class TestLegacyAPIEndpoints:
         """Test get variant from URI endpoint - not found."""
         variant_uri = "package://nonexistent-package-1.0.0[0]"
 
-        with patch("rez_proxy.routers.package_ops.get_variant_from_uri", return_value=None):
+        with patch(
+            "rez_proxy.routers.package_ops.get_variant_from_uri", return_value=None
+        ):
             response = client.get(f"/api/v1/package-ops/variant/{variant_uri}")
 
             assert response.status_code == 404
@@ -1239,7 +1477,9 @@ class TestLegacyAPIEndpoints:
                     mock_version.return_value = "1.0.0"
                     mock_get_help.return_value = "This is help text for test-package"
 
-                    response = client.get("/api/v1/package-ops/help/test-package?version=1.0.0")
+                    response = client.get(
+                        "/api/v1/package-ops/help/test-package?version=1.0.0"
+                    )
 
                     assert response.status_code == 200
                     result = response.json()
@@ -1267,7 +1507,9 @@ class TestLegacyAPIEndpoints:
         """Test get package help endpoint - package not found."""
         with patch("rez_proxy.routers.package_ops.get_package", return_value=None):
             with patch("rez_proxy.routers.package_ops.Version"):
-                response = client.get("/api/v1/package-ops/help/nonexistent-package?version=1.0.0")
+                response = client.get(
+                    "/api/v1/package-ops/help/nonexistent-package?version=1.0.0"
+                )
 
                 assert response.status_code == 404
                 assert "not found" in response.json()["detail"]
@@ -1282,7 +1524,9 @@ class TestLegacyAPIEndpoints:
                 mock_get_package.return_value = mock_package
                 mock_version.return_value = "1.0.0"
 
-                response = client.get("/api/v1/package-ops/test/test-package?version=1.0.0")
+                response = client.get(
+                    "/api/v1/package-ops/test/test-package?version=1.0.0"
+                )
 
                 assert response.status_code == 200
                 result = response.json()
@@ -1302,7 +1546,9 @@ class TestLegacyAPIEndpoints:
                 mock_get_package.return_value = mock_package
                 mock_version.return_value = "1.0.0"
 
-                response = client.get("/api/v1/package-ops/test/test-package?version=1.0.0")
+                response = client.get(
+                    "/api/v1/package-ops/test/test-package?version=1.0.0"
+                )
 
                 assert response.status_code == 200
                 result = response.json()

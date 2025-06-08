@@ -2,13 +2,13 @@
 Rez Proxy configuration management.
 """
 
-import asyncio
 import json
 import os
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -16,9 +16,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 try:
     from watchdog.events import FileSystemEventHandler
     from watchdog.observers import Observer
+
     WATCHDOG_AVAILABLE = True
 except ImportError:
     WATCHDOG_AVAILABLE = False
+    # Create dummy classes for type hints when watchdog is not available
+    class Observer:  # type: ignore
+        pass
+
+    class FileSystemEventHandler:  # type: ignore
+        pass
 
 
 class RezProxyConfig(BaseSettings):
@@ -94,11 +101,11 @@ class RezProxyConfig(BaseSettings):
 class ConfigChangeHandler(FileSystemEventHandler):
     """File system event handler for configuration changes."""
 
-    def __init__(self, config_manager: 'ConfigManager'):
+    def __init__(self, config_manager: "ConfigManager") -> None:
         self.config_manager = config_manager
-        self.last_modified = {}
+        self.last_modified: dict[str, float] = {}
 
-    def on_modified(self, event):
+    def on_modified(self, event: Any) -> None:
         """Handle file modification events."""
         if event.is_directory:
             return
@@ -121,11 +128,11 @@ class ConfigChangeHandler(FileSystemEventHandler):
 class ConfigManager:
     """Enhanced configuration manager with hot reload support."""
 
-    def __init__(self):
-        self._config: Optional[RezProxyConfig] = None
-        self._observers: List[Observer] = []
-        self._change_callbacks: List[Callable[[RezProxyConfig], None]] = []
-        self._watched_files: Dict[str, str] = {}  # file_path -> config_type
+    def __init__(self) -> None:
+        self._config: RezProxyConfig | None = None
+        self._observers: list[Any] = []
+        self._change_callbacks: list[Callable[[RezProxyConfig], None]] = []
+        self._watched_files: dict[str, str] = {}  # file_path -> config_type
         self._lock = threading.RLock()
 
     def get_config(self) -> RezProxyConfig:
@@ -154,16 +161,16 @@ class ConfigManager:
 
             return new_config
 
-    def add_change_callback(self, callback: Callable[[RezProxyConfig], None]):
+    def add_change_callback(self, callback: Callable[[RezProxyConfig], None]) -> None:
         """Add a callback to be called when configuration changes."""
         self._change_callbacks.append(callback)
 
-    def remove_change_callback(self, callback: Callable[[RezProxyConfig], None]):
+    def remove_change_callback(self, callback: Callable[[RezProxyConfig], None]) -> None:
         """Remove a configuration change callback."""
         if callback in self._change_callbacks:
             self._change_callbacks.remove(callback)
 
-    def _notify_config_change(self, new_config: RezProxyConfig):
+    def _notify_config_change(self, new_config: RezProxyConfig) -> None:
         """Notify all callbacks of configuration change."""
         for callback in self._change_callbacks:
             try:
@@ -171,7 +178,7 @@ class ConfigManager:
             except Exception as e:
                 print(f"⚠️ Error in config change callback: {e}")
 
-    def _start_hot_reload(self):
+    def _start_hot_reload(self) -> None:
         """Start file system monitoring for hot reload."""
         if not WATCHDOG_AVAILABLE:
             print("⚠️ Watchdog not available, hot reload disabled")
@@ -191,7 +198,7 @@ class ConfigManager:
         if config_dir.exists():
             self._watch_directory(str(config_dir))
 
-    def _watch_file(self, file_path: str, config_type: str):
+    def _watch_file(self, file_path: str, config_type: str) -> None:
         """Watch a specific file for changes."""
         self._watched_files[file_path] = config_type
 
@@ -200,7 +207,7 @@ class ConfigManager:
         if directory and os.path.exists(directory):
             self._watch_directory(directory)
 
-    def _watch_directory(self, directory: str):
+    def _watch_directory(self, directory: str) -> None:
         """Watch a directory for file changes."""
         if not WATCHDOG_AVAILABLE:
             return
@@ -216,7 +223,7 @@ class ConfigManager:
         """Check if a file is being watched for configuration changes."""
         return file_path in self._watched_files
 
-    def reload_config_from_file(self, file_path: str):
+    def reload_config_from_file(self, file_path: str) -> None:
         """Reload configuration when a watched file changes."""
         config_type = self._watched_files.get(file_path)
         if not config_type:
@@ -232,10 +239,10 @@ class ConfigManager:
         except Exception as e:
             print(f"❌ Error reloading config from {file_path}: {e}")
 
-    def _reload_main_config(self, file_path: str):
+    def _reload_main_config(self, file_path: str) -> None:
         """Reload main configuration from JSON file."""
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 config_data = json.load(f)
 
             # Update environment variables
@@ -251,7 +258,7 @@ class ConfigManager:
         except Exception as e:
             print(f"❌ Error loading config file {file_path}: {e}")
 
-    def save_config_to_file(self, config: RezProxyConfig, file_path: Optional[str] = None):
+    def save_config_to_file(self, config: RezProxyConfig, file_path: str | None = None) -> None:
         """Save current configuration to a JSON file."""
         if file_path is None:
             file_path = config.config_file_path
@@ -265,18 +272,18 @@ class ConfigManager:
         config_dict = config.model_dump()
 
         # Remove sensitive fields
-        sensitive_fields = ['api_key']
+        sensitive_fields = ["api_key"]
         for field in sensitive_fields:
             config_dict.pop(field, None)
 
         try:
-            with open(file_path, 'w') as f:
+            with open(file_path, "w") as f:
                 json.dump(config_dict, f, indent=2)
             print(f"💾 Configuration saved to {file_path}")
         except Exception as e:
             print(f"❌ Error saving config to {file_path}: {e}")
 
-    def stop_hot_reload(self):
+    def stop_hot_reload(self) -> None:
         """Stop all file system observers."""
         for observer in self._observers:
             observer.stop()
@@ -360,23 +367,25 @@ def set_rez_config_from_dict(config_dict: dict) -> None:
     reload_config()
 
 
-def add_config_change_callback(callback: Callable[[RezProxyConfig], None]):
+def add_config_change_callback(callback: Callable[[RezProxyConfig], None]) -> None:
     """Add a callback to be called when configuration changes."""
     _config_manager.add_change_callback(callback)
 
 
-def remove_config_change_callback(callback: Callable[[RezProxyConfig], None]):
+def remove_config_change_callback(callback: Callable[[RezProxyConfig], None]) -> None:
     """Remove a configuration change callback."""
     _config_manager.remove_change_callback(callback)
 
 
-def save_config_to_file(config: Optional[RezProxyConfig] = None, file_path: Optional[str] = None):
+def save_config_to_file(
+    config: RezProxyConfig | None = None, file_path: str | None = None
+) -> None:
     """Save configuration to a JSON file."""
     if config is None:
         config = get_config()
     _config_manager.save_config_to_file(config, file_path)
 
 
-def stop_config_hot_reload():
+def stop_config_hot_reload() -> None:
     """Stop configuration hot reload monitoring."""
     _config_manager.stop_hot_reload()

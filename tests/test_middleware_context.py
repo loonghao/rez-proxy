@@ -8,7 +8,11 @@ import pytest
 from fastapi import Request, Response
 from starlette.datastructures import Headers
 
-from rez_proxy.middleware.context import ContextMiddleware, EnvironmentManager, environment_manager
+from rez_proxy.middleware.context import (
+    ContextMiddleware,
+    EnvironmentManager,
+    environment_manager,
+)
 from rez_proxy.models.schemas import ClientContext, PlatformInfo, ServiceMode
 
 

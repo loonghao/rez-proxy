@@ -293,7 +293,6 @@ class TestRezConfigManager:
         finally:
             os.unlink(template_path)
 
-
     def test_validate_configuration_packages_path_not_directory(self, manager):
         """Test configuration validation with packages path that is not a directory."""
         with tempfile.NamedTemporaryFile() as temp_file:
@@ -338,7 +337,10 @@ class TestRezConfigManager:
                 manager._environment_info = info
 
                 warnings = manager.validate_configuration()
-                assert any("no write access to local packages path" in w.lower() for w in warnings)
+                assert any(
+                    "no write access to local packages path" in w.lower()
+                    for w in warnings
+                )
 
     def test_validate_configuration_release_packages_path_not_directory(self, manager):
         """Test configuration validation with release packages path that is not a directory."""
@@ -347,7 +349,10 @@ class TestRezConfigManager:
             manager._environment_info = info
 
             warnings = manager.validate_configuration()
-            assert any("release packages path is not a directory" in w.lower() for w in warnings)
+            assert any(
+                "release packages path is not a directory" in w.lower()
+                for w in warnings
+            )
 
     def test_validate_configuration_tmpdir_no_write_access(self, manager):
         """Test configuration validation with tmpdir without write access."""
@@ -358,7 +363,10 @@ class TestRezConfigManager:
                 manager._environment_info = info
 
                 warnings = manager.validate_configuration()
-                assert any("no write access to temporary directory" in w.lower() for w in warnings)
+                assert any(
+                    "no write access to temporary directory" in w.lower()
+                    for w in warnings
+                )
 
     def test_validate_configuration_cache_path_no_write_access(self, manager):
         """Test configuration validation with cache path without write access."""
@@ -369,7 +377,9 @@ class TestRezConfigManager:
                 manager._environment_info = info
 
                 warnings = manager.validate_configuration()
-                assert any("no write access to cache directory" in w.lower() for w in warnings)
+                assert any(
+                    "no write access to cache directory" in w.lower() for w in warnings
+                )
 
     def test_apply_configuration_from_dict_with_none_values(self, manager):
         """Test applying configuration with None values."""
