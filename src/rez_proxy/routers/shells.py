@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi_versioning import version
 
 from ..core.platform import ShellService
+from ..core.web_compatibility import web_incompatible
 
 router = APIRouter()
 
@@ -95,6 +96,15 @@ async def get_shell_info(shell_name: str, request: Request) -> dict[str, Any]:
 
 
 @router.post("/{shell_name}/spawn")
+@web_incompatible(
+    reason="Requires system process creation and interactive terminal access",
+    alternatives=[
+        "Use a local rez-proxy instance for shell access",
+        "Set up a web-based terminal service",
+        "Use SSH or remote desktop for shell access"
+    ],
+    documentation_url="/docs/web-environment-compatibility"
+)
 async def spawn_shell(shell_name: str, env_id: str) -> None:
     """Spawn a shell in the specified environment."""
     # This would require more complex implementation with WebSocket or similar

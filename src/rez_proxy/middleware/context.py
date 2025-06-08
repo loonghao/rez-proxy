@@ -10,6 +10,7 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from rez_proxy.core.context import get_context_manager
+from rez_proxy.core.web_detector import get_web_detector
 from rez_proxy.models.schemas import ClientContext, PlatformInfo, ServiceMode
 
 
@@ -103,14 +104,25 @@ class ContextMiddleware(BaseHTTPMiddleware):
         )
 
     def _determine_service_mode(self, request: Request) -> ServiceMode:
-        """Determine if this is a local or remote service call."""
-        # Check explicit header
+        """Determine service mode: local, remote, or web."""
+        # Check explicit header first
         mode_header = request.headers.get("X-Service-Mode")
         if mode_header:
             try:
                 return ServiceMode(mode_header.lower())
             except ValueError:
                 pass
+
+        # Check web environment detection
+        web_detector = get_web_detector()
+        detected_mode = web_detector.get_service_mode()
+
+        # If web environment is detected, use web mode unless overridden
+        if detected_mode == ServiceMode.WEB:
+            # Still allow explicit remote mode if platform info is provided
+            if self._has_platform_info_in_request(request):
+                return ServiceMode.REMOTE
+            return ServiceMode.WEB
 
         # Check if platform info is provided (indicates remote mode)
         if self._has_platform_info_in_request(request):
@@ -130,7 +142,10 @@ class ContextMiddleware(BaseHTTPMiddleware):
         if origin and any(indicator in origin for indicator in local_indicators):
             return ServiceMode.LOCAL
 
-        # Default to remote mode for safety
+        # For web environments, default to web mode; otherwise remote for safety
+        if web_detector.is_web_environment():
+            return ServiceMode.WEB
+
         return ServiceMode.REMOTE
 
     def _has_platform_info_in_request(self, request: Request) -> bool:

@@ -30,6 +30,7 @@ dependencies = [
     "click>=8.2.1",
     "python-multipart>=0.0.6",
     "fastapi-versioning>=0.10.0",
+    "watchdog>=3.0.0",
     "rez",
 ]
 
@@ -52,7 +53,7 @@ Repository = "https://github.com/loonghao/rez-proxy.git"
 Issues = "https://github.com/loonghao/rez-proxy/issues"
 
 [project.scripts]
-rez-proxy = "rez_proxy.cli:main"
+rez-proxy = "rez_proxy.cli:cli"
 
 [tool.setuptools.packages.find]
 where = ["src"]

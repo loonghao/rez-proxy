@@ -70,10 +70,10 @@ class TestBuildRouter:
 
         with patch("os.path.exists", return_value=True):
             with patch(
-                "rez.developer_package.get_developer_package"
+                "rez_proxy.core.rez_imports.rez_api.get_developer_package"
             ) as mock_get_dev_pkg:
                 with patch(
-                    "rez.build_process.create_build_process"
+                    "rez_proxy.core.rez_imports.rez_api.create_build_process"
                 ) as mock_create_build:
                     # Mock developer package
                     mock_dev_pkg = MagicMock()
@@ -122,10 +122,10 @@ class TestBuildRouter:
 
         with patch("os.path.exists", return_value=True):
             with patch(
-                "rez.developer_package.get_developer_package"
+                "rez_proxy.core.rez_imports.rez_api.get_developer_package"
             ) as mock_get_dev_pkg:
                 with patch(
-                    "rez.build_process.get_build_process_types"
+                    "rez_proxy.core.rez_imports.rez_api.get_build_process_types"
                 ) as mock_get_types:
                     # Mock developer package
                     mock_dev_pkg = MagicMock()
@@ -164,7 +164,7 @@ class TestBuildRouter:
 
         with patch("os.path.exists", return_value=True):
             with patch(
-                "rez.developer_package.get_developer_package"
+                "rez_proxy.core.rez_imports.rez_api.get_developer_package"
             ) as mock_get_dev_pkg:
                 # Mock developer package with variants
                 mock_dev_pkg = MagicMock()
@@ -191,7 +191,7 @@ class TestBuildRouter:
 
         with patch("os.path.exists", return_value=True):
             with patch(
-                "rez.developer_package.get_developer_package"
+                "rez_proxy.core.rez_imports.rez_api.get_developer_package"
             ) as mock_get_dev_pkg:
                 # Mock developer package with dependencies
                 mock_dev_pkg = MagicMock()
@@ -221,9 +221,9 @@ class TestBuildRouter:
 
         with patch("os.path.exists", return_value=True):
             with patch(
-                "rez.developer_package.get_developer_package"
+                "rez_proxy.core.rez_imports.rez_api.get_developer_package"
             ) as mock_get_dev_pkg:
-                with patch("rez.release_vcs.create_release_from_path") as mock_release:
+                with patch("rez_proxy.core.rez_imports.rez_api.create_release_from_path") as mock_release:
                     # Mock developer package
                     mock_dev_pkg = MagicMock()
                     mock_dev_pkg.name = "test_package"

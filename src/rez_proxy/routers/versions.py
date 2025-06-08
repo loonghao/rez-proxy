@@ -5,6 +5,8 @@ Version and requirement API endpoints.
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from rez_proxy.core.rez_imports import rez_api, requires_rez
+
 router = APIRouter()
 
 
@@ -56,17 +58,20 @@ class VersionCompareResponse(BaseModel):
 
 
 @router.post("/parse", response_model=VersionResponse)
+@requires_rez
 async def parse_version(request: VersionRequest) -> VersionResponse:
     """Parse a version string."""
     try:
-        from rez.version import Version
-
-        version = Version(request.version)
+        version = rez_api.create_version(request.version)
 
         return VersionResponse(
             version=str(version),
-            tokens=[str(token) for token in version.tokens],
+            tokens=[str(token) for token in getattr(version, "tokens", [])],
             is_valid=True,
+        )
+    except AttributeError as e:
+        raise HTTPException(
+            status_code=500, detail=f"Rez version API not available: {e}"
         )
     except Exception:
         return VersionResponse(
@@ -77,13 +82,12 @@ async def parse_version(request: VersionRequest) -> VersionResponse:
 
 
 @router.post("/compare", response_model=VersionCompareResponse)
+@requires_rez
 async def compare_versions(request: VersionCompareRequest) -> VersionCompareResponse:
     """Compare two versions."""
     try:
-        from rez.version import Version
-
-        v1 = Version(request.version1)
-        v2 = Version(request.version2)
+        v1 = rez_api.create_version(request.version1)
+        v2 = rez_api.create_version(request.version2)
 
         if v1 < v2:
             comparison = -1
@@ -100,23 +104,30 @@ async def compare_versions(request: VersionCompareRequest) -> VersionCompareResp
             less_than=(comparison == -1),
             greater_than=(comparison == 1),
         )
+    except AttributeError as e:
+        raise HTTPException(
+            status_code=500, detail=f"Rez version API not available: {e}"
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to compare versions: {e}")
 
 
 @router.post("/requirements/parse", response_model=RequirementResponse)
+@requires_rez
 async def parse_requirement(request: RequirementRequest) -> RequirementResponse:
     """Parse a requirement string."""
     try:
-        from rez.version import Requirement
-
-        req = Requirement(request.requirement)
+        req = rez_api.create_requirement(request.requirement)
 
         return RequirementResponse(
             requirement=str(req),
-            name=req.name,
-            range=str(req.range) if req.range else None,
+            name=getattr(req, "name", ""),
+            range=str(getattr(req, "range", None)) if hasattr(req, "range") and req.range else None,
             is_valid=True,
+        )
+    except AttributeError as e:
+        raise HTTPException(
+            status_code=500, detail=f"Rez requirement API not available: {e}"
         )
     except Exception:
         return RequirementResponse(
@@ -128,52 +139,69 @@ async def parse_requirement(request: RequirementRequest) -> RequirementResponse:
 
 
 @router.post("/requirements/check")
+@requires_rez
 async def check_requirement_satisfaction(
     requirement: str,
     version: str,
 ) -> dict[str, str | bool]:
     """Check if a version satisfies a requirement."""
     try:
-        from rez.version import Requirement, Version
+        req = rez_api.create_requirement(requirement)
+        ver = rez_api.create_version(version)
 
-        req = Requirement(requirement)
-        ver = Version(version)
-
-        satisfies = ver in req.range if req.range else (ver.name == req.name)
+        # Check if version satisfies requirement
+        satisfies = False
+        if hasattr(req, "range") and req.range:
+            satisfies = ver in req.range
+        elif hasattr(req, "name") and hasattr(ver, "name"):
+            satisfies = (ver.name == req.name)
 
         return {
             "requirement": str(req),
             "version": str(ver),
             "satisfies": satisfies,
         }
+    except AttributeError as e:
+        raise HTTPException(
+            status_code=500, detail=f"Rez version/requirement API not available: {e}"
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to check requirement: {e}")
 
 
 @router.get("/latest")
+@requires_rez
 async def get_latest_versions(
     packages: list[str],
     limit: int = 10,
 ) -> dict[str, dict[str, str | None]]:
     """Get latest versions of specified packages."""
     try:
-        from rez.packages import iter_packages
-
         results = {}
 
         for package_name in packages[:limit]:  # Limit to prevent abuse
             try:
+                # Use rez_api to iterate packages
+                packages_iter = rez_api.iter_packages(package_name)
                 latest_version = None
-                for package in iter_packages(package_name):
-                    if latest_version is None or package.version > latest_version:
+
+                for package in packages_iter:
+                    if latest_version is None or (hasattr(package, "version") and package.version > latest_version):
                         latest_version = package.version
                     break  # iter_packages returns in descending order
 
                 results[package_name] = str(latest_version) if latest_version else None
+            except AttributeError as e:
+                # Rez API not available
+                results[package_name] = None
             except Exception:
                 results[package_name] = None
 
         return {"latest_versions": results}
+    except AttributeError as e:
+        raise HTTPException(
+            status_code=500, detail=f"Rez packages API not available: {e}"
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to get latest versions: {e}"

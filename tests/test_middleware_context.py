@@ -8,7 +8,7 @@ import pytest
 from fastapi import Request, Response
 from starlette.datastructures import Headers
 
-from rez_proxy.middleware.context import ContextMiddleware
+from rez_proxy.middleware.context import ContextMiddleware, EnvironmentManager, environment_manager
 from rez_proxy.models.schemas import ClientContext, PlatformInfo, ServiceMode
 
 
@@ -266,3 +266,171 @@ class TestContextMiddleware:
         assert "X-Request-ID" not in mock_response.headers
         assert "X-Session-ID" not in mock_response.headers
         assert "X-Platform-Used" not in mock_response.headers
+
+
+class TestEnvironmentManager:
+    """Test EnvironmentManager class."""
+
+    @pytest.fixture
+    def env_manager(self):
+        """Create EnvironmentManager instance."""
+        return EnvironmentManager()
+
+    def test_get_environment_all_vars_present(self, env_manager):
+        """Test get_environment when all relevant variables are present."""
+        mock_env = {
+            "REZ_PACKAGES_PATH": "/path/to/packages",
+            "REZ_LOCAL_PACKAGES_PATH": "/path/to/local",
+            "REZ_RELEASE_PACKAGES_PATH": "/path/to/release",
+            "REZ_CONFIG_FILE": "/path/to/config.py",
+            "REZ_TMPDIR": "/tmp/rez",
+            "PATH": "/usr/bin:/bin",
+            "PYTHONPATH": "/usr/lib/python",
+            "HOME": "/home/user",
+            "USER": "testuser",
+            "USERNAME": "testuser",
+            "OTHER_VAR": "should_not_be_included",
+        }
+
+        with patch("os.environ.get") as mock_get:
+            mock_get.side_effect = lambda var: mock_env.get(var)
+
+            result = env_manager.get_environment()
+
+            # Should include all relevant vars except OTHER_VAR
+            expected_vars = [
+                "REZ_PACKAGES_PATH",
+                "REZ_LOCAL_PACKAGES_PATH",
+                "REZ_RELEASE_PACKAGES_PATH",
+                "REZ_CONFIG_FILE",
+                "REZ_TMPDIR",
+                "PATH",
+                "PYTHONPATH",
+                "HOME",
+                "USER",
+                "USERNAME",
+            ]
+
+            assert len(result) == len(expected_vars)
+            for var in expected_vars:
+                assert var in result
+                assert result[var] == mock_env[var]
+            assert "OTHER_VAR" not in result
+
+    def test_get_environment_partial_vars_present(self, env_manager):
+        """Test get_environment when only some variables are present."""
+        mock_env = {
+            "REZ_PACKAGES_PATH": "/path/to/packages",
+            "PATH": "/usr/bin:/bin",
+            "HOME": "/home/user",
+            # Other vars are None/missing
+        }
+
+        with patch("os.environ.get") as mock_get:
+            mock_get.side_effect = lambda var: mock_env.get(var)
+
+            result = env_manager.get_environment()
+
+            assert len(result) == 3
+            assert result["REZ_PACKAGES_PATH"] == "/path/to/packages"
+            assert result["PATH"] == "/usr/bin:/bin"
+            assert result["HOME"] == "/home/user"
+
+            # Should not include missing vars
+            assert "REZ_LOCAL_PACKAGES_PATH" not in result
+            assert "USER" not in result
+
+    def test_get_environment_no_vars_present(self, env_manager):
+        """Test get_environment when no relevant variables are present."""
+        with patch("os.environ.get") as mock_get:
+            mock_get.return_value = None
+
+            result = env_manager.get_environment()
+
+            assert result == {}
+            assert len(result) == 0
+
+    def test_get_environment_empty_string_values(self, env_manager):
+        """Test get_environment with empty string values."""
+        mock_env = {
+            "REZ_PACKAGES_PATH": "",
+            "PATH": "/usr/bin",
+            "HOME": "",
+        }
+
+        with patch("os.environ.get") as mock_get:
+            mock_get.side_effect = lambda var: mock_env.get(var)
+
+            result = env_manager.get_environment()
+
+            # Empty strings should be included (they are not None)
+            assert len(result) == 3
+            assert result["REZ_PACKAGES_PATH"] == ""
+            assert result["PATH"] == "/usr/bin"
+            assert result["HOME"] == ""
+
+    def test_get_environment_special_characters(self, env_manager):
+        """Test get_environment with special characters in values."""
+        mock_env = {
+            "REZ_PACKAGES_PATH": "/path/with spaces/packages",
+            "PATH": "/usr/bin:/bin:/usr/local/bin",
+            "HOME": "/home/user-name_123",
+            "REZ_CONFIG_FILE": "/path/with/unicode/配置.py",
+        }
+
+        with patch("os.environ.get") as mock_get:
+            mock_get.side_effect = lambda var: mock_env.get(var)
+
+            result = env_manager.get_environment()
+
+            assert len(result) == 4
+            assert result["REZ_PACKAGES_PATH"] == "/path/with spaces/packages"
+            assert result["PATH"] == "/usr/bin:/bin:/usr/local/bin"
+            assert result["HOME"] == "/home/user-name_123"
+            assert result["REZ_CONFIG_FILE"] == "/path/with/unicode/配置.py"
+
+    def test_get_environment_relevant_vars_list(self, env_manager):
+        """Test that get_environment only checks the expected relevant variables."""
+        expected_vars = [
+            "REZ_PACKAGES_PATH",
+            "REZ_LOCAL_PACKAGES_PATH",
+            "REZ_RELEASE_PACKAGES_PATH",
+            "REZ_CONFIG_FILE",
+            "REZ_TMPDIR",
+            "PATH",
+            "PYTHONPATH",
+            "HOME",
+            "USER",
+            "USERNAME",
+        ]
+
+        with patch("os.environ.get") as mock_get:
+            mock_get.return_value = "test_value"
+
+            result = env_manager.get_environment()
+
+            # Should call os.environ.get exactly once for each relevant var
+            assert mock_get.call_count == len(expected_vars)
+
+            # Verify all expected vars are in result
+            assert len(result) == len(expected_vars)
+            for var in expected_vars:
+                assert var in result
+                assert result[var] == "test_value"
+
+    def test_global_environment_manager_instance(self):
+        """Test that the global environment_manager instance works correctly."""
+        # Test that the global instance exists and is an EnvironmentManager
+        assert isinstance(environment_manager, EnvironmentManager)
+
+        # Test that it has the expected method
+        assert hasattr(environment_manager, "get_environment")
+        assert callable(environment_manager.get_environment)
+
+        # Test that it works the same as a new instance
+        with patch("os.environ.get") as mock_get:
+            mock_get.side_effect = lambda var: {"PATH": "/test/path"}.get(var)
+
+            result = environment_manager.get_environment()
+
+            assert result == {"PATH": "/test/path"}

@@ -12,6 +12,7 @@ from fastapi_versioning import version
 from pydantic import BaseModel, Field
 
 from rez_proxy.exceptions import handle_rez_exception
+from rez_proxy.core.web_compatibility import web_limited
 
 router = APIRouter()
 
@@ -60,9 +61,9 @@ class SuiteToolAliasRequest(BaseModel):
 @version(1)
 async def create_suite(request: SuiteCreateRequest) -> SuiteInfo:
     """Create a new suite."""
-    try:
-        from datetime import datetime
+    from datetime import datetime
 
+    try:
         from rez.suite import Suite
 
         # Create new suite
@@ -114,11 +115,18 @@ async def get_suite(suite_id: str) -> SuiteInfo:
         except Exception:
             tools = {}
 
+        # Get context names safely
+        contexts = []
+        try:
+            contexts = suite.context_names
+        except Exception:
+            contexts = []
+
         return SuiteInfo(
             id=suite_id,
             name=suite_info["name"],
             description=suite_info["description"],
-            contexts=suite.context_names,
+            contexts=contexts,
             tools=tools,
             created_at=suite_info["created_at"],
             status=suite_info["status"],
@@ -194,6 +202,13 @@ async def alias_tool_in_suite(
 
 @router.post("/{suite_id}/save")
 @version(1)
+@web_limited(
+    reason="Requires local file system write access for suite persistence",
+    alternatives=[
+        "Use in-memory suite storage for web environments",
+        "Export suite configuration as JSON for manual saving"
+    ]
+)
 async def save_suite(suite_id: str, path: str | None = None) -> dict[str, str]:
     """Save a suite to disk."""
     if suite_id not in _suites:
@@ -229,17 +244,29 @@ async def get_suite_tools(suite_id: str) -> dict[str, Any]:
         suite_info = _suites[suite_id]
         suite = suite_info["suite"]
 
-        # Get tools and conflicts
-        tools = suite.get_tools()
+        # Get tools and conflicts safely
+        tools = {}
+        try:
+            tools = suite.get_tools()
+        except Exception:
+            tools = {}
+
         conflicts = getattr(suite, "tool_conflicts", {})
 
         tools_info = {}
         for name, tool in tools.items():
-            tools_info[name] = {
-                "context": tool.context_name,
-                "command": str(tool),
-                "conflicted": name in conflicts,
-            }
+            try:
+                tools_info[name] = {
+                    "context": getattr(tool, "context_name", "unknown"),
+                    "command": str(tool),
+                    "conflicted": name in conflicts,
+                }
+            except Exception:
+                tools_info[name] = {
+                    "context": "unknown",
+                    "command": "unknown",
+                    "conflicted": name in conflicts,
+                }
 
         return {
             "tools": tools_info,
@@ -268,12 +295,20 @@ async def list_suites() -> dict[str, Any]:
     suites = []
     for suite_id, suite_info in _suites.items():
         suite = suite_info["suite"]
+
+        # Get context names safely
+        contexts = []
+        try:
+            contexts = suite.context_names
+        except Exception:
+            contexts = []
+
         suites.append(
             {
                 "id": suite_id,
                 "name": suite_info["name"],
                 "description": suite_info["description"],
-                "contexts": suite.context_names,
+                "contexts": contexts,
                 "created_at": suite_info["created_at"],
                 "status": suite_info["status"],
             }

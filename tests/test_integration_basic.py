@@ -64,11 +64,11 @@ class TestBasicIntegration:
     def test_repositories_list(self, client):
         """Test repositories listing."""
         with patch("rez_proxy.core.context.get_current_context", return_value=None):
-            with patch("rez.packages.get_package_repositories") as mock_repos:
+            with patch("rez.package_repository.package_repository_manager") as mock_repo_mgr:
                 mock_repo = MagicMock()
                 mock_repo.name = "central"
                 mock_repo.location = "/packages"
-                mock_repos.return_value = [mock_repo]
+                mock_repo_mgr.get_repositories.return_value = [mock_repo]
 
                 response = client.get("/api/v1/repositories")
                 assert response.status_code == 200
@@ -192,11 +192,11 @@ class TestBasicIntegration:
         repo_name = "central"
 
         with patch("rez_proxy.core.context.get_current_context", return_value=None):
-            with patch("rez.packages.get_package_repository") as mock_get_repo:
+            with patch("rez.package_repository.package_repository_manager") as mock_repo_mgr:
                 with patch("rez.packages.iter_packages") as mock_iter:
                     mock_repo = MagicMock()
                     mock_repo.name = repo_name
-                    mock_get_repo.return_value = mock_repo
+                    mock_repo_mgr.get_repository.return_value = mock_repo
 
                     mock_package = MagicMock()
                     mock_package.name = "python"

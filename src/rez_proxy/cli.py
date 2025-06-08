@@ -129,5 +129,127 @@ def main(
     )
 
 
+# Configuration management commands
+@click.group()
+def config():
+    """Configuration management commands."""
+    pass
+
+
+@config.command()
+@click.option("--file", "-f", default="config/rez_proxy.json", help="Configuration file path")
+def create_default(file):
+    """Create a default configuration file."""
+    from rez_proxy.utils.config_utils import create_default_config_file
+
+    try:
+        create_default_config_file(file)
+        click.echo(f"✅ Default configuration created: {file}")
+    except Exception as e:
+        click.echo(f"❌ Failed to create configuration: {e}", err=True)
+        raise click.ClickException(str(e))
+
+
+@config.command()
+@click.argument("file")
+def validate(file):
+    """Validate a configuration file."""
+    from rez_proxy.utils.config_utils import validate_config_file
+
+    try:
+        result = validate_config_file(file)
+
+        if result["valid"]:
+            click.echo(f"✅ Configuration file is valid: {file}")
+
+            if result["warnings"]:
+                click.echo("⚠️  Warnings:")
+                for warning in result["warnings"]:
+                    click.echo(f"   {warning}")
+        else:
+            click.echo(f"❌ Configuration file is invalid: {file}")
+            for error in result["errors"]:
+                click.echo(f"   {error}")
+            raise click.ClickException("Configuration validation failed")
+
+    except Exception as e:
+        click.echo(f"❌ Failed to validate configuration: {e}", err=True)
+        raise click.ClickException(str(e))
+
+
+@config.command()
+@click.argument("file")
+@click.option("--suffix", default=".backup", help="Backup file suffix")
+def backup(file, suffix):
+    """Create a backup of a configuration file."""
+    from rez_proxy.utils.config_utils import backup_config_file
+
+    try:
+        backup_path = backup_config_file(file, suffix)
+        click.echo(f"✅ Configuration backup created: {backup_path}")
+    except Exception as e:
+        click.echo(f"❌ Failed to create backup: {e}", err=True)
+        raise click.ClickException(str(e))
+
+
+@config.command()
+@click.argument("backup_file")
+@click.argument("target_file")
+def restore(backup_file, target_file):
+    """Restore configuration from backup."""
+    from rez_proxy.utils.config_utils import restore_config_from_backup
+
+    try:
+        restore_config_from_backup(backup_file, target_file)
+        click.echo(f"✅ Configuration restored: {backup_file} -> {target_file}")
+    except Exception as e:
+        click.echo(f"❌ Failed to restore configuration: {e}", err=True)
+        raise click.ClickException(str(e))
+
+
+@config.command()
+@click.argument("file1")
+@click.argument("file2")
+def diff(file1, file2):
+    """Show differences between two configuration files."""
+    from rez_proxy.utils.config_utils import get_config_diff
+
+    try:
+        diff_result = get_config_diff(file1, file2)
+
+        if diff_result["added"]:
+            click.echo("➕ Added:")
+            for key, value in diff_result["added"].items():
+                click.echo(f"   {key}: {value}")
+
+        if diff_result["removed"]:
+            click.echo("➖ Removed:")
+            for key, value in diff_result["removed"].items():
+                click.echo(f"   {key}: {value}")
+
+        if diff_result["changed"]:
+            click.echo("🔄 Changed:")
+            for key, change in diff_result["changed"].items():
+                click.echo(f"   {key}: {change['old']} -> {change['new']}")
+
+        if not any([diff_result["added"], diff_result["removed"], diff_result["changed"]]):
+            click.echo("✅ No differences found")
+
+    except Exception as e:
+        click.echo(f"❌ Failed to compare configurations: {e}", err=True)
+        raise click.ClickException(str(e))
+
+
+# Create a multi-command CLI
+@click.group()
+def cli():
+    """Rez Proxy - RESTful API server for Rez package manager."""
+    pass
+
+
+cli.add_command(main, name="serve")
+cli.add_command(config)
+
+
 if __name__ == "__main__":
-    main()
+    cli()

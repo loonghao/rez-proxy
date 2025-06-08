@@ -8,6 +8,7 @@ import uuid
 from contextvars import ContextVar
 
 from rez_proxy.models.schemas import ClientContext, PlatformInfo, ServiceMode
+from rez_proxy.core.web_detector import get_web_detector
 
 # Context variables for request-scoped data
 current_client_context: ContextVar[ClientContext | None] = ContextVar(
@@ -116,7 +117,13 @@ class ContextManager:
 
     def is_local_mode(self) -> bool:
         """Check if current context is in local mode."""
-        return not self.is_remote_mode()
+        context = self.get_current_context()
+        return context is None or context.service_mode == ServiceMode.LOCAL
+
+    def is_web_mode(self) -> bool:
+        """Check if current context is in web mode."""
+        context = self.get_current_context()
+        return context is not None and context.service_mode == ServiceMode.WEB
 
 
 # Global context manager instance
@@ -146,3 +153,8 @@ def is_remote_mode() -> bool:
 def is_local_mode() -> bool:
     """Check if current request is in local mode."""
     return context_manager.is_local_mode()
+
+
+def is_web_mode() -> bool:
+    """Check if current request is in web mode."""
+    return context_manager.is_web_mode()
