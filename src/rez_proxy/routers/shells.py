@@ -7,8 +7,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi_versioning import version
 
-from ..core.platform import ShellService
-from ..core.web_compatibility import web_incompatible
+from rez_proxy.core.platform import ShellService
+from rez_proxy.core.web_compatibility import web_incompatible
 
 router = APIRouter()
 

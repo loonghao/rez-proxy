@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from ..config import RezProxyConfig, get_config, get_config_manager
+from rez_proxy.config import RezProxyConfig, get_config, get_config_manager
 
 
 def create_default_config_file(file_path: str) -> None:

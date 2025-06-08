@@ -350,7 +350,7 @@ class TestCommandExecution:
         assert data["return_code"] == 0
         assert "execution_time" in data
 
-    @patch("subprocess")
+    @patch("rez_proxy.routers.environments.subprocess")
     def test_execute_command_success_with_subprocess_fallback(self, mock_subprocess, client):
         """Test successful command execution using subprocess fallback."""
         # First create an environment

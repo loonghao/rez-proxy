@@ -266,6 +266,9 @@ async def validate_package_list(packages: list[str]) -> dict[str, Any]:
                         "error": f"Rez API not available: {e}",
                     }
                 )
+            except RuntimeError as e:
+                # System errors should be raised as 500
+                raise HTTPException(status_code=500, detail=f"Package validation failed: {e}")
             except Exception as e:
                 validation_results.append(
                     {

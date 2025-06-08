@@ -8,8 +8,8 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi_versioning import version
 from pydantic import BaseModel
 
-from ..core.rez_imports import rez_api, requires_rez
-from ..core.web_compatibility import web_incompatible
+from rez_proxy.core.rez_imports import rez_api, requires_rez
+from rez_proxy.core.web_compatibility import web_incompatible
 
 router = APIRouter()
 
@@ -43,7 +43,8 @@ class ReleaseRequest(BaseModel):
         "Set up a remote build service with file upload capabilities",
         "Use CI/CD pipelines for automated package building"
     ],
-    documentation_url="/docs/web-environment-compatibility"
+    documentation_url="/docs/web-environment-compatibility",
+    allow_override=True
 )
 async def build_package(request: BuildRequest) -> dict[str, Any]:
     """Build a package from source."""
@@ -129,7 +130,8 @@ async def build_package(request: BuildRequest) -> dict[str, Any]:
         "Set up a remote release service with proper authentication",
         "Use automated release pipelines"
     ],
-    documentation_url="/docs/web-environment-compatibility"
+    documentation_url="/docs/web-environment-compatibility",
+    allow_override=True
 )
 async def release_package(request: ReleaseRequest) -> dict[str, Any]:
     """Release a package."""
@@ -148,6 +150,10 @@ async def release_package(request: ReleaseRequest) -> dict[str, Any]:
         except AttributeError as e:
             raise HTTPException(
                 status_code=500, detail=f"Rez API not available: {e}"
+            )
+        except RuntimeError as e:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to get developer package: {e}"
             )
         except Exception as e:
             raise HTTPException(
@@ -214,7 +220,8 @@ async def get_build_systems(request: Request) -> dict[str, Any]:
         "Use package repository APIs to check package status",
         "Upload source code to a remote build service"
     ],
-    documentation_url="/docs/web-environment-compatibility"
+    documentation_url="/docs/web-environment-compatibility",
+    allow_override=True
 )
 async def get_build_status(source_path: str) -> dict[str, Any]:
     """Get build status for a package source."""
@@ -286,7 +293,8 @@ async def get_build_status(source_path: str) -> dict[str, Any]:
         "Use package repository APIs to get variant information",
         "Query published packages instead of source code"
     ],
-    documentation_url="/docs/web-environment-compatibility"
+    documentation_url="/docs/web-environment-compatibility",
+    allow_override=True
 )
 async def get_package_variants(source_path: str) -> dict[str, Any]:
     """Get variants information for a package."""
@@ -305,6 +313,10 @@ async def get_package_variants(source_path: str) -> dict[str, Any]:
         except AttributeError as e:
             raise HTTPException(
                 status_code=500, detail=f"Rez API not available: {e}"
+            )
+        except RuntimeError as e:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to get developer package: {e}"
             )
         except Exception as e:
             raise HTTPException(
@@ -348,7 +360,8 @@ async def get_package_variants(source_path: str) -> dict[str, Any]:
         "Use package repository APIs to get dependency information",
         "Query published packages for dependency details"
     ],
-    documentation_url="/docs/web-environment-compatibility"
+    documentation_url="/docs/web-environment-compatibility",
+    allow_override=True
 )
 async def get_build_dependencies(source_path: str) -> dict[str, Any]:
     """Get build dependencies for a package."""

@@ -318,7 +318,7 @@ class TestReleasePackage:
         response = client.post("/api/v1/build/release", json=request_data)
 
         assert response.status_code == 500
-        assert "Failed to release package" in response.json()["detail"]
+        assert "Failed to get developer package" in response.json()["detail"]
 
 
 class TestGetBuildSystems:
@@ -636,7 +636,7 @@ class TestGetPackageVariants:
         response = client.get(f"/api/v1/build/variants/{temp_source_path}")
 
         assert response.status_code == 500
-        assert "Failed to get package variants" in response.json()["detail"]
+        assert "Failed to get developer package" in response.json()["detail"]
 
 
 class TestGetBuildDependencies:

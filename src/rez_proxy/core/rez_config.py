@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from ..config import get_config
+from rez_proxy.config import get_config
 
 
 @dataclass

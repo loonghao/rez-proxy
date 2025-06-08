@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi_versioning import version
 from pydantic import BaseModel
 
-from ..config import (
+from rez_proxy.config import (
     RezProxyConfig,
     get_config,
     get_config_manager,

@@ -211,7 +211,7 @@ class TestResolverRouter:
             "depth": 1,
         }
 
-        with patch("rez_proxy.core.rez_imports.rez_api") as mock_api:
+        with patch("rez_proxy.routers.resolver.rez_api") as mock_api:
             mock_api.iter_packages = MagicMock(side_effect=AttributeError("API not available"))
 
             response = client.post(

@@ -199,6 +199,7 @@ def web_incompatible(
     reason: str,
     alternatives: Optional[List[str]] = None,
     documentation_url: Optional[str] = None,
+    allow_override: bool = False,
 ) -> Callable:
     """Decorator for APIs that are completely incompatible with web environments."""
     return web_compatible(
@@ -206,6 +207,7 @@ def web_incompatible(
         reason=reason,
         alternatives=alternatives,
         documentation_url=documentation_url,
+        allow_override=allow_override,
     )
 
 

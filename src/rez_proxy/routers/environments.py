@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException
 
 from rez_proxy.exceptions import handle_rez_exception
 
-from ..models.schemas import (
+from rez_proxy.models.schemas import (
     CommandExecuteRequest,
     CommandExecuteResponse,
     EnvironmentInfo,

@@ -90,7 +90,7 @@ async def create_suite(request: SuiteCreateRequest) -> SuiteInfo:
             status="created",
         )
     except Exception as e:
-        handle_rez_exception(e, "suite_creation")
+        raise HTTPException(status_code=500, detail=f"Failed to create suite: {str(e)}")
 
 
 @router.get("/{suite_id}", response_model=SuiteInfo)
@@ -132,7 +132,7 @@ async def get_suite(suite_id: str) -> SuiteInfo:
             status=suite_info["status"],
         )
     except Exception as e:
-        handle_rez_exception(e, "suite_retrieval")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve suite: {str(e)}")
 
 
 @router.post("/{suite_id}/contexts")
@@ -170,7 +170,7 @@ async def add_context_to_suite(
     except HTTPException:
         raise
     except Exception as e:
-        handle_rez_exception(e, "suite_context_addition")
+        raise HTTPException(status_code=500, detail=f"Failed to add context to suite: {str(e)}")
 
 
 @router.post("/{suite_id}/tools/alias")
@@ -197,7 +197,7 @@ async def alias_tool_in_suite(
             "message": f"Tool '{request.tool_name}' aliased as '{request.alias_name}' in suite '{suite_id}'"
         }
     except Exception as e:
-        handle_rez_exception(e, "suite_tool_aliasing")
+        raise HTTPException(status_code=500, detail=f"Failed to alias tool in suite: {str(e)}")
 
 
 @router.post("/{suite_id}/save")
@@ -230,7 +230,7 @@ async def save_suite(suite_id: str, path: str | None = None) -> dict[str, str]:
 
         return {"message": f"Suite '{suite_id}' saved to '{path}'", "path": path}
     except Exception as e:
-        handle_rez_exception(e, "suite_saving")
+        raise HTTPException(status_code=500, detail=f"Failed to save suite: {str(e)}")
 
 
 @router.get("/{suite_id}/tools")
@@ -274,7 +274,7 @@ async def get_suite_tools(suite_id: str) -> dict[str, Any]:
             "total_tools": len(tools),
         }
     except Exception as e:
-        handle_rez_exception(e, "suite_tools_retrieval")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve suite tools: {str(e)}")
 
 
 @router.delete("/{suite_id}")
