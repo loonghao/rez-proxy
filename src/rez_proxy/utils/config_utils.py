@@ -33,7 +33,12 @@ def create_default_config_file(file_path: str) -> None:
 
 def validate_config_file(file_path: str) -> dict[str, Any]:
     """Validate a configuration file."""
-    result: dict[str, Any] = {"valid": False, "errors": [], "warnings": [], "config": None}
+    result: dict[str, Any] = {
+        "valid": False,
+        "errors": [],
+        "warnings": [],
+        "config": None,
+    }
 
     try:
         # Check if file exists
@@ -114,7 +119,12 @@ def merge_config_files(base_file: str, override_file: str, output_file: str) -> 
 
 def validate_config_file_data(config_data: dict[str, Any]) -> dict[str, Any]:
     """Validate configuration data dictionary."""
-    result: dict[str, Any] = {"valid": False, "errors": [], "warnings": [], "config": None}
+    result: dict[str, Any] = {
+        "valid": False,
+        "errors": [],
+        "warnings": [],
+        "config": None,
+    }
 
     try:
         # Validate against schema

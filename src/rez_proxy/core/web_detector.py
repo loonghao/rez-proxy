@@ -5,12 +5,15 @@ Provides functionality to detect if the application is running in a web environm
 and determine appropriate security and access control measures.
 """
 
+import logging
 import os
 import threading
 from functools import lru_cache
 from typing import Any
 
 from rez_proxy.models.schemas import ServiceMode
+
+logger = logging.getLogger(__name__)
 
 
 class WebEnvironmentDetector:
@@ -66,8 +69,9 @@ class WebEnvironmentDetector:
             try:
                 if method():
                     return True
-            except Exception:
+            except Exception as e:
                 # Continue with other methods if one fails
+                logger.debug(f"Web detection method failed: {e}")
                 continue
 
         return False

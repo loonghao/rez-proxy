@@ -75,7 +75,12 @@ class TestContextMiddleware:
             }
         )
 
-        with patch("rez_proxy.middleware.context.get_context_manager") as mock_get_cm:
+        with patch("rez_proxy.middleware.context.get_context_manager") as mock_get_cm, \
+             patch("rez_proxy.middleware.context.get_web_detector") as mock_detector:
+            # Mock web detector to return non-web mode
+            mock_detector.return_value.get_service_mode.return_value = ServiceMode.REMOTE
+            mock_detector.return_value.is_web_environment.return_value = False
+
             mock_cm = MagicMock()
             mock_get_cm.return_value = mock_cm
             mock_context = MagicMock(spec=ClientContext)
@@ -106,7 +111,11 @@ class TestContextMiddleware:
 
         with patch.object(
             middleware, "_has_platform_info_in_request", return_value=False
-        ):
+        ), patch("rez_proxy.middleware.context.get_web_detector") as mock_detector:
+            # Mock web detector to return non-web mode
+            mock_detector.return_value.get_service_mode.return_value = ServiceMode.REMOTE
+            mock_detector.return_value.is_web_environment.return_value = False
+
             result = middleware._determine_service_mode(mock_request)
             assert result == ServiceMode.REMOTE
 
@@ -156,7 +165,11 @@ class TestContextMiddleware:
 
         with patch.object(
             middleware, "_has_platform_info_in_request", return_value=False
-        ):
+        ), patch("rez_proxy.middleware.context.get_web_detector") as mock_detector:
+            # Mock web detector to return non-web mode
+            mock_detector.return_value.get_service_mode.return_value = ServiceMode.REMOTE
+            mock_detector.return_value.is_web_environment.return_value = False
+
             result = middleware._determine_service_mode(mock_request)
             assert result == ServiceMode.REMOTE
 

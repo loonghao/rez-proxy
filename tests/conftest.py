@@ -171,6 +171,34 @@ def disable_web_compatibility():
 
 
 @pytest.fixture(autouse=True)
+def clean_environment():
+    """Clean environment variables that might interfere with tests."""
+    # Store original values
+    original_values = {}
+
+    # List of environment variables that might cause issues
+    problematic_vars = [
+        "REZ_PROXY_API_PORT",
+        "REZ_PROXY_PORT",
+    ]
+
+    for var in problematic_vars:
+        original_values[var] = os.environ.get(var)
+        # Remove any invalid values
+        if var in os.environ and os.environ[var] == "invalid_port":
+            os.environ.pop(var)
+
+    yield
+
+    # Restore original values
+    for var, value in original_values.items():
+        if value is not None:
+            os.environ[var] = value
+        else:
+            os.environ.pop(var, None)
+
+
+@pytest.fixture(autouse=True)
 def reset_context():
     """Reset context manager state between tests."""
     from rez_proxy.core.context import context_manager

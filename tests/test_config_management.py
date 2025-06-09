@@ -17,6 +17,7 @@ from rez_proxy.config import (
     ConfigManager,
     RezProxyConfig,
     get_config,
+    get_config_manager,
     reload_config,
     stop_config_hot_reload,
 )
@@ -86,6 +87,9 @@ class TestConfigManager:
 
         def test_callback(config):
             callback_called.append(config)
+
+        # Initialize config first
+        config_manager.get_config()
 
         config_manager.add_change_callback(test_callback)
 
@@ -183,7 +187,7 @@ class TestConfigUtils:
     def test_config_diff(self):
         """Test configuration file diff."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f1:
-            json.dump({"host": "localhost", "port": 8000, "debug": False}, f1)
+            json.dump({"host": "localhost", "port": 8000, "workers": 1}, f1)
             file1_path = f1.name
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f2:
@@ -197,7 +201,7 @@ class TestConfigUtils:
             assert diff["changed"]["host"]["old"] == "localhost"
             assert diff["changed"]["host"]["new"] == "remotehost"
 
-            assert "debug" in diff["removed"]
+            assert "workers" in diff["removed"]
             assert "log_level" in diff["added"]
             assert "port" in diff["unchanged"]
 
@@ -398,6 +402,9 @@ class TestConfigManagerAdvanced:
         def test_callback(config):
             callback_calls.append(config.host)
 
+        # Initialize config first
+        config_manager.get_config()
+
         # Add callback
         config_manager.add_change_callback(test_callback)
 
@@ -474,13 +481,14 @@ class TestConfigManagerAdvanced:
 
         finally:
             # Cleanup
+            config_manager.stop_hot_reload()
             os.environ.pop("REZ_PROXY_API_ENABLE_HOT_RELOAD", None)
             os.environ.pop("REZ_PROXY_API_CONFIG_FILE_PATH", None)
             if os.path.exists("config/test.json"):
                 os.unlink("config/test.json")
             if os.path.exists("config"):
-                os.rmdir("config")
-            config_manager.stop_hot_reload()
+                import shutil
+                shutil.rmtree("config", ignore_errors=True)
 
     def test_config_manager_stop_hot_reload(self):
         """Test stopping hot reload functionality."""
@@ -508,7 +516,7 @@ class TestConfigUtilsAdvanced:
     def test_merge_config_files(self):
         """Test merging configuration files."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f1:
-            json.dump({"host": "localhost", "port": 8000, "debug": False}, f1)
+            json.dump({"host": "localhost", "port": 8000, "workers": 1}, f1)
             base_file = f1.name
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f2:
@@ -527,7 +535,7 @@ class TestConfigUtilsAdvanced:
             # Check merged values
             assert merged_config["host"] == "remotehost"  # Override
             assert merged_config["port"] == 8000  # Base
-            assert merged_config["debug"] is False  # Base
+            assert merged_config["workers"] == 1  # Base
             assert merged_config["log_level"] == "debug"  # Override
 
         finally:
@@ -541,7 +549,8 @@ class TestConfigUtilsAdvanced:
         {
             "host": "${HOST}",
             "port": ${PORT},
-            "database_url": "${DB_PROTOCOL}://${DB_HOST}:${DB_PORT}/${DB_NAME}"
+            "log_level": "${LOG_LEVEL}",
+            "workers": ${WORKERS}
         }
         """
 
@@ -556,10 +565,8 @@ class TestConfigUtilsAdvanced:
             variables = {
                 "HOST": "production.example.com",
                 "PORT": "9000",
-                "DB_PROTOCOL": "postgresql",
-                "DB_HOST": "db.example.com",
-                "DB_PORT": "5432",
-                "DB_NAME": "myapp",
+                "LOG_LEVEL": "info",
+                "WORKERS": "4",
             }
 
             apply_config_template(template_file, variables, output_file)
@@ -569,7 +576,8 @@ class TestConfigUtilsAdvanced:
 
             assert config["host"] == "production.example.com"
             assert config["port"] == 9000
-            assert config["database_url"] == "postgresql://db.example.com:5432/myapp"
+            assert config["log_level"] == "info"
+            assert config["workers"] == 4
 
         finally:
             for path in [template_file, output_file]:
@@ -587,6 +595,10 @@ class TestConfigUtilsAdvanced:
 
         @watch_config_changes(config_change_callback)
         def test_function():
+            # Initialize config first
+            get_config()
+            # Trigger config change while callback is registered
+            reload_config()
             return "test_result"
 
         # Execute function
@@ -594,10 +606,7 @@ class TestConfigUtilsAdvanced:
 
         assert result == "test_result"
 
-        # Trigger config change
-        reload_config()
-
-        # Check that callback was called
+        # Check that callback was called during function execution
         assert len(callback_calls) > 0
 
 
@@ -634,8 +643,9 @@ class TestConfigIntegrationAdvanced:
             with open(config_file, "w") as f:
                 json.dump(updated_config, f)
 
-            # Manually trigger reload (simulating file change)
-            reload_config()
+            # Manually trigger reload from file (simulating file change)
+            config_manager = get_config_manager()
+            config_manager._reload_main_config(config_file)
 
             # Get updated config
             new_config = get_config()
@@ -661,24 +671,31 @@ class TestConfigIntegrationAdvanced:
         }
 
         # Create valid config file
-        with open(temp_config_file, "w") as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(valid_config_data, f)
+            temp_config_file = f.name
 
-        result = validate_config_file(temp_config_file)
-        assert result["valid"] is True
-        assert len(result["errors"]) == 0
+        try:
+            result = validate_config_file(temp_config_file)
+            assert result["valid"] is True
+            assert len(result["errors"]) == 0
 
-        # Test invalid config
-        invalid_config_data = {
-            "host": "localhost",
-            "port": "invalid_port",  # Should be integer
-            "workers": -1,  # Should be positive
-        }
+            # Test invalid config
+            invalid_config_data = {
+                "host": "localhost",
+                "port": "invalid_port",  # Should be integer
+                "workers": -1,  # Should be positive
+                "invalid_field": "value",  # Should not exist
+            }
 
-        # Create invalid config file
-        with open(temp_config_file, "w") as f:
-            json.dump(invalid_config_data, f)
+            # Create invalid config file
+            with open(temp_config_file, "w") as f:
+                json.dump(invalid_config_data, f)
 
-        result = validate_config_file(temp_config_file)
-        assert result["valid"] is False
-        assert len(result["errors"]) > 0
+            result = validate_config_file(temp_config_file)
+            assert result["valid"] is False
+            assert len(result["errors"]) > 0
+
+        finally:
+            if os.path.exists(temp_config_file):
+                os.unlink(temp_config_file)

@@ -96,16 +96,16 @@ async def advanced_resolve(request: ResolverRequest) -> ResolverResponse:
                             "uri": getattr(package, "uri", None),
                         }
                         resolved_packages.append(pkg_info)
-        except Exception:
+        except Exception as e:
             # Log error but continue with empty resolved_packages
-            pass
+            logger.debug(f"Failed to extract resolved packages: {e}")
 
         failed_packages = []
         if hasattr(context, "failed_packages"):
             try:
                 failed_packages = [str(pkg) for pkg in context.failed_packages]
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to extract failed packages: {e}")
 
         status_name = "unknown"
         if hasattr(context, "status"):

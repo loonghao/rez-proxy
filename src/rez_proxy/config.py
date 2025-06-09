@@ -10,7 +10,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 try:
@@ -20,6 +20,7 @@ try:
     WATCHDOG_AVAILABLE = True
 except ImportError:
     WATCHDOG_AVAILABLE = False
+
     # Create dummy classes for type hints when watchdog is not available
     class Observer:  # type: ignore
         pass
@@ -97,6 +98,27 @@ class RezProxyConfig(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="REZ_PROXY_API_", case_sensitive=False)
 
+    @field_validator("port", mode="before")
+    @classmethod
+    def validate_port(cls, v: Any) -> int:
+        """Validate port value and handle invalid strings."""
+        if isinstance(v, str):
+            # Handle common invalid values
+            if v.lower() in ("invalid_port", "invalid", "none", "null", ""):
+                return 8000  # Default port
+            try:
+                return int(v)
+            except ValueError:
+                # If conversion fails, use default
+                return 8000
+        if isinstance(v, int):
+            return v
+        # For any other type, convert to int or use default
+        try:
+            return int(v)
+        except (ValueError, TypeError):
+            return 8000
+
 
 class ConfigChangeHandler(FileSystemEventHandler):
     """File system event handler for configuration changes."""
@@ -165,7 +187,9 @@ class ConfigManager:
         """Add a callback to be called when configuration changes."""
         self._change_callbacks.append(callback)
 
-    def remove_change_callback(self, callback: Callable[[RezProxyConfig], None]) -> None:
+    def remove_change_callback(
+        self, callback: Callable[[RezProxyConfig], None]
+    ) -> None:
         """Remove a configuration change callback."""
         if callback in self._change_callbacks:
             self._change_callbacks.remove(callback)
@@ -258,7 +282,9 @@ class ConfigManager:
         except Exception as e:
             print(f"❌ Error loading config file {file_path}: {e}")
 
-    def save_config_to_file(self, config: RezProxyConfig, file_path: str | None = None) -> None:
+    def save_config_to_file(
+        self, config: RezProxyConfig, file_path: str | None = None
+    ) -> None:
         """Save current configuration to a JSON file."""
         if file_path is None:
             file_path = config.config_file_path

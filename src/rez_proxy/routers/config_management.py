@@ -66,7 +66,7 @@ async def update_config(request: ConfigUpdateRequest) -> dict[str, Any]:
     try:
         # Validate configuration keys
         current_config = get_config()
-        valid_fields = set(current_config.model_fields.keys())
+        valid_fields = set(current_config.__class__.model_fields.keys())
 
         invalid_fields = set(request.config.keys()) - valid_fields
         if invalid_fields:

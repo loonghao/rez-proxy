@@ -2,6 +2,7 @@
 Package build and release API endpoints.
 """
 
+import logging
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
@@ -10,6 +11,8 @@ from pydantic import BaseModel
 
 from rez_proxy.core.rez_imports import requires_rez, rez_api
 from rez_proxy.core.web_compatibility import web_incompatible
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -259,9 +262,9 @@ async def get_build_status(source_path: str) -> dict[str, Any]:
         except AttributeError:
             # If build process types are not available, continue with empty build_files
             pass
-        except Exception:
+        except Exception as e:
             # Log error but don't fail the entire request
-            pass
+            logger.debug(f"Failed to get build process types: {e}")
 
         return {
             "package": dev_package.name,

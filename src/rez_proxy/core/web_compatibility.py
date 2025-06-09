@@ -119,13 +119,17 @@ def web_compatible(
             return await func(*args, **kwargs)
 
         # Store compatibility metadata on the function
-        setattr(wrapper, "_web_compatibility", {
-            "level": level,
-            "reason": reason,
-            "alternatives": alternatives,
-            "documentation_url": documentation_url,
-            "allow_override": allow_override,
-        })
+        setattr(
+            wrapper,
+            "_web_compatibility",
+            {
+                "level": level,
+                "reason": reason,
+                "alternatives": alternatives,
+                "documentation_url": documentation_url,
+                "allow_override": allow_override,
+            },
+        )
 
         return wrapper
 

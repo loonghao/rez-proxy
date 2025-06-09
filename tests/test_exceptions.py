@@ -162,10 +162,15 @@ class TestCreateErrorResponse:
         assert isinstance(response, JSONResponse)
         assert response.status_code == 404
 
-        # Check response content structure
-        assert "error" in response.json()
-        assert "code" in response.json()["error"]
-        assert "message" in response.json()["error"]
+        # Check response content structure by parsing the body
+        import json
+        response_data = json.loads(response.body.decode())
+        assert "error" in response_data
+        assert "code" in response_data["error"]
+        assert "message" in response_data["error"]
+        assert response_data["error"]["code"] == "UNKNOWN_ERROR"
+        assert response_data["error"]["message"] == "Not found"
+        assert response_data["error"]["details"] == {}
         assert (
             response.body.decode()
             == '{"error":{"code":"UNKNOWN_ERROR","message":"Not found","details":{}}}'

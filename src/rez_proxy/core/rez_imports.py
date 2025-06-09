@@ -200,7 +200,9 @@ class RezAPI:
         Requirement = self.Requirement  # noqa: N806
         return Requirement(requirement_str)
 
-    def create_resolved_context(self, package_requests: Any = None, **kwargs: Any) -> Any:
+    def create_resolved_context(
+        self, package_requests: Any = None, **kwargs: Any
+    ) -> Any:
         """Create a ResolvedContext object."""
         ResolvedContext = self.ResolvedContext  # noqa: N806
         return ResolvedContext(package_requests, **kwargs)

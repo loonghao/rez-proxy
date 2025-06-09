@@ -89,7 +89,7 @@ class TestGetRezConfig:
 
     def test_get_rez_config_success(self, client, mock_rez_config):
         """Test successful config retrieval."""
-        with patch("rez_proxy.routers.rez_config.config", mock_rez_config):
+        with patch("rez.config.config", mock_rez_config):
             response = client.get("/api/v1/rez-config/")
 
             assert response.status_code == 200
@@ -125,9 +125,9 @@ class TestGetRezConfig:
                 return "valid_value"
 
             with patch(
-                "rez_proxy.routers.rez_config.getattr", side_effect=mock_getattr
+                "builtins.getattr", side_effect=mock_getattr
             ):
-                with patch("rez_proxy.routers.rez_config.config", mock_config):
+                with patch("rez.config.config", mock_config):
                     response = client.get("/api/v1/rez-config/")
 
                     assert response.status_code == 200
@@ -138,10 +138,7 @@ class TestGetRezConfig:
 
     def test_get_rez_config_import_error(self, client):
         """Test config retrieval with import error."""
-        with patch(
-            "rez_proxy.routers.rez_config.config",
-            side_effect=ImportError("Rez not available"),
-        ):
+        with patch.dict('sys.modules', {'rez.config': None}):
             response = client.get("/api/v1/rez-config/")
 
             assert response.status_code == 500
@@ -150,7 +147,7 @@ class TestGetRezConfig:
     def test_get_rez_config_general_exception(self, client):
         """Test config retrieval with general exception."""
         with patch(
-            "rez_proxy.routers.rez_config.config",
+            "rez.config.config",
             side_effect=Exception("Unexpected error"),
         ):
             response = client.get("/api/v1/rez-config/")
@@ -164,7 +161,7 @@ class TestGetConfigValue:
 
     def test_get_config_value_success(self, client, mock_rez_config):
         """Test successful config value retrieval."""
-        with patch("rez_proxy.routers.rez_config.config", mock_rez_config):
+        with patch("rez.config.config", mock_rez_config):
             response = client.get("/api/v1/rez-config/key/test_string")
 
             assert response.status_code == 200
@@ -175,8 +172,8 @@ class TestGetConfigValue:
 
     def test_get_config_value_not_found(self, client, mock_rez_config):
         """Test config value retrieval for non-existent key."""
-        with patch("rez_proxy.routers.rez_config.config", mock_rez_config):
-            with patch("rez_proxy.routers.rez_config.hasattr", return_value=False):
+        with patch("rez.config.config", mock_rez_config):
+            with patch("builtins.hasattr", return_value=False):
                 response = client.get("/api/v1/rez-config/key/nonexistent")
 
                 assert response.status_code == 404
@@ -188,7 +185,7 @@ class TestGetConfigValue:
     def test_get_config_value_import_error(self, client):
         """Test config value retrieval with import error."""
         with patch(
-            "rez_proxy.routers.rez_config.config",
+            "rez.config.config",
             side_effect=ImportError("Rez not available"),
         ):
             response = client.get("/api/v1/rez-config/key/test_key")
@@ -198,9 +195,9 @@ class TestGetConfigValue:
 
     def test_get_config_value_general_exception(self, client, mock_rez_config):
         """Test config value retrieval with general exception."""
-        with patch("rez_proxy.routers.rez_config.config", mock_rez_config):
+        with patch("rez.config.config", mock_rez_config):
             with patch(
-                "rez_proxy.routers.rez_config.getattr",
+                "builtins.getattr",
                 side_effect=Exception("Unexpected error"),
             ):
                 response = client.get("/api/v1/rez-config/key/test_string")
@@ -214,7 +211,7 @@ class TestGetPackagesPaths:
 
     def test_get_packages_paths_success(self, client, mock_rez_config):
         """Test successful packages paths retrieval."""
-        with patch("rez_proxy.routers.rez_config.config", mock_rez_config):
+        with patch("rez.config.config", mock_rez_config):
             response = client.get("/api/v1/rez-config/packages-path")
 
             assert response.status_code == 200
@@ -237,8 +234,8 @@ class TestGetPackagesPaths:
                 return []
             return default
 
-        with patch("rez_proxy.routers.rez_config.getattr", side_effect=mock_getattr):
-            with patch("rez_proxy.routers.rez_config.config", mock_config):
+        with patch("builtins.getattr", side_effect=mock_getattr):
+            with patch("rez.config.config", mock_config):
                 response = client.get("/api/v1/rez-config/packages-path")
 
                 assert response.status_code == 200
@@ -250,7 +247,7 @@ class TestGetPackagesPaths:
     def test_get_packages_paths_import_error(self, client):
         """Test packages paths retrieval with import error."""
         with patch(
-            "rez_proxy.routers.rez_config.config",
+            "rez.config.config",
             side_effect=ImportError("Rez not available"),
         ):
             response = client.get("/api/v1/rez-config/packages-path")
@@ -261,7 +258,7 @@ class TestGetPackagesPaths:
     def test_get_packages_paths_general_exception(self, client):
         """Test packages paths retrieval with general exception."""
         with patch(
-            "rez_proxy.routers.rez_config.config",
+            "rez.config.config",
             side_effect=Exception("Unexpected error"),
         ):
             response = client.get("/api/v1/rez-config/packages-path")
@@ -275,8 +272,8 @@ class TestGetPlatformInfo:
 
     def test_get_platform_info_success(self, client, mock_rez_config, mock_rez_system):
         """Test successful platform info retrieval."""
-        with patch("rez_proxy.routers.rez_config.config", mock_rez_config):
-            with patch("rez_proxy.routers.rez_config.system", mock_rez_system):
+        with patch("rez.config.config", mock_rez_config):
+            with patch("rez.system.system", mock_rez_system):
                 response = client.get("/api/v1/rez-config/platform-info")
 
                 assert response.status_code == 200
@@ -297,9 +294,9 @@ class TestGetPlatformInfo:
                 return default
             return "test_value"
 
-        with patch("rez_proxy.routers.rez_config.getattr", side_effect=mock_getattr):
-            with patch("rez_proxy.routers.rez_config.config", mock_config):
-                with patch("rez_proxy.routers.rez_config.system", mock_rez_system):
+        with patch("builtins.getattr", side_effect=mock_getattr):
+            with patch("rez.config.config", mock_config):
+                with patch("rez.system.system", mock_rez_system):
                     response = client.get("/api/v1/rez-config/platform-info")
 
                     assert response.status_code == 200
@@ -309,7 +306,7 @@ class TestGetPlatformInfo:
     def test_get_platform_info_import_error(self, client):
         """Test platform info retrieval with import error."""
         with patch(
-            "rez_proxy.routers.rez_config.config",
+            "rez.config.config",
             side_effect=ImportError("Rez not available"),
         ):
             response = client.get("/api/v1/rez-config/platform-info")
@@ -320,7 +317,7 @@ class TestGetPlatformInfo:
     def test_get_platform_info_general_exception(self, client):
         """Test platform info retrieval with general exception."""
         with patch(
-            "rez_proxy.routers.rez_config.config",
+            "rez.config.config",
             side_effect=Exception("Unexpected error"),
         ):
             response = client.get("/api/v1/rez-config/platform-info")
@@ -334,7 +331,7 @@ class TestGetPluginInfo:
 
     def test_get_plugin_info_success(self, client, mock_plugin_manager):
         """Test successful plugin info retrieval."""
-        with patch("rez_proxy.routers.rez_config.plugin_manager", mock_plugin_manager):
+        with patch("rez.plugin_managers.plugin_manager", mock_plugin_manager):
             response = client.get("/api/v1/rez-config/plugins")
 
             assert response.status_code == 200
@@ -370,7 +367,7 @@ class TestGetPluginInfo:
 
         mock_manager.get_plugins.side_effect = mock_get_plugins
 
-        with patch("rez_proxy.routers.rez_config.plugin_manager", mock_manager):
+        with patch("rez.plugin_managers.plugin_manager", mock_manager):
             response = client.get("/api/v1/rez-config/plugins")
 
             assert response.status_code == 200
@@ -386,7 +383,7 @@ class TestGetPluginInfo:
     def test_get_plugin_info_import_error(self, client):
         """Test plugin info retrieval with import error."""
         with patch(
-            "rez_proxy.routers.rez_config.plugin_manager",
+            "rez.plugin_managers.plugin_manager",
             side_effect=ImportError("Rez not available"),
         ):
             response = client.get("/api/v1/rez-config/plugins")
@@ -397,7 +394,7 @@ class TestGetPluginInfo:
     def test_get_plugin_info_general_exception(self, client):
         """Test plugin info retrieval with general exception."""
         with patch(
-            "rez_proxy.routers.rez_config.plugin_manager",
+            "rez.plugin_managers.plugin_manager",
             side_effect=Exception("Unexpected error"),
         ):
             response = client.get("/api/v1/rez-config/plugins")
@@ -448,7 +445,7 @@ class TestGetEnvironmentVariables:
     def test_get_environment_variables_exception(self, client):
         """Test environment variables retrieval with exception."""
         with patch(
-            "rez_proxy.routers.rez_config.os.environ", side_effect=Exception("OS error")
+            "os.environ", side_effect=Exception("OS error")
         ):
             response = client.get("/api/v1/rez-config/environment-vars")
 
@@ -461,7 +458,7 @@ class TestGetCacheInfo:
 
     def test_get_cache_info_success(self, client, mock_rez_config):
         """Test successful cache info retrieval."""
-        with patch("rez_proxy.routers.rez_config.config", mock_rez_config):
+        with patch("rez.config.config", mock_rez_config):
             response = client.get("/api/v1/rez-config/cache-info")
 
             assert response.status_code == 200
@@ -479,8 +476,8 @@ class TestGetCacheInfo:
         def mock_getattr(obj, name, default=None):
             return default
 
-        with patch("rez_proxy.routers.rez_config.getattr", side_effect=mock_getattr):
-            with patch("rez_proxy.routers.rez_config.config", mock_config):
+        with patch("builtins.getattr", side_effect=mock_getattr):
+            with patch("rez.config.config", mock_config):
                 response = client.get("/api/v1/rez-config/cache-info")
 
                 assert response.status_code == 200
@@ -493,7 +490,7 @@ class TestGetCacheInfo:
     def test_get_cache_info_import_error(self, client):
         """Test cache info retrieval with import error."""
         with patch(
-            "rez_proxy.routers.rez_config.config",
+            "rez.config.config",
             side_effect=ImportError("Rez not available"),
         ):
             response = client.get("/api/v1/rez-config/cache-info")
@@ -504,7 +501,7 @@ class TestGetCacheInfo:
     def test_get_cache_info_general_exception(self, client):
         """Test cache info retrieval with general exception."""
         with patch(
-            "rez_proxy.routers.rez_config.config",
+            "rez.config.config",
             side_effect=Exception("Unexpected error"),
         ):
             response = client.get("/api/v1/rez-config/cache-info")
@@ -518,7 +515,7 @@ class TestGetBuildInfo:
 
     def test_get_build_info_success(self, client, mock_rez_config):
         """Test successful build info retrieval."""
-        with patch("rez_proxy.routers.rez_config.config", mock_rez_config):
+        with patch("rez.config.config", mock_rez_config):
             response = client.get("/api/v1/rez-config/build-info")
 
             assert response.status_code == 200
@@ -540,8 +537,8 @@ class TestGetBuildInfo:
                 return []
             return default
 
-        with patch("rez_proxy.routers.rez_config.getattr", side_effect=mock_getattr):
-            with patch("rez_proxy.routers.rez_config.config", mock_config):
+        with patch("builtins.getattr", side_effect=mock_getattr):
+            with patch("rez.config.config", mock_config):
                 response = client.get("/api/v1/rez-config/build-info")
 
                 assert response.status_code == 200
@@ -554,7 +551,7 @@ class TestGetBuildInfo:
     def test_get_build_info_import_error(self, client):
         """Test build info retrieval with import error."""
         with patch(
-            "rez_proxy.routers.rez_config.config",
+            "rez.config.config",
             side_effect=ImportError("Rez not available"),
         ):
             response = client.get("/api/v1/rez-config/build-info")
@@ -565,7 +562,7 @@ class TestGetBuildInfo:
     def test_get_build_info_general_exception(self, client):
         """Test build info retrieval with general exception."""
         with patch(
-            "rez_proxy.routers.rez_config.config",
+            "rez.config.config",
             side_effect=Exception("Unexpected error"),
         ):
             response = client.get("/api/v1/rez-config/build-info")
@@ -579,11 +576,11 @@ class TestValidateConfig:
 
     def test_validate_config_success_all_valid(self, client, mock_rez_config):
         """Test successful config validation with all valid paths."""
-        with patch("rez_proxy.routers.rez_config.config", mock_rez_config):
+        with patch("rez.config.config", mock_rez_config):
             with patch(
-                "rez_proxy.routers.rez_config.os.path.exists", return_value=True
+                "os.path.exists", return_value=True
             ):
-                with patch("rez_proxy.routers.rez_config.os.access", return_value=True):
+                with patch("os.access", return_value=True):
                     response = client.get("/api/v1/rez-config/validation")
 
                     assert response.status_code == 200
@@ -604,8 +601,8 @@ class TestValidateConfig:
                 return None
             return default
 
-        with patch("rez_proxy.routers.rez_config.getattr", side_effect=mock_getattr):
-            with patch("rez_proxy.routers.rez_config.config", mock_config):
+        with patch("builtins.getattr", side_effect=mock_getattr):
+            with patch("rez.config.config", mock_config):
                 response = client.get("/api/v1/rez-config/validation")
 
                 assert response.status_code == 200
@@ -617,9 +614,9 @@ class TestValidateConfig:
 
     def test_validate_config_missing_packages_paths(self, client, mock_rez_config):
         """Test config validation with missing packages paths."""
-        with patch("rez_proxy.routers.rez_config.config", mock_rez_config):
+        with patch("rez.config.config", mock_rez_config):
             with patch(
-                "rez_proxy.routers.rez_config.os.path.exists", return_value=False
+                "os.path.exists", return_value=False
             ):
                 response = client.get("/api/v1/rez-config/validation")
 
@@ -631,12 +628,12 @@ class TestValidateConfig:
 
     def test_validate_config_no_read_access(self, client, mock_rez_config):
         """Test config validation with no read access to packages paths."""
-        with patch("rez_proxy.routers.rez_config.config", mock_rez_config):
+        with patch("rez.config.config", mock_rez_config):
             with patch(
-                "rez_proxy.routers.rez_config.os.path.exists", return_value=True
+                "os.path.exists", return_value=True
             ):
                 with patch(
-                    "rez_proxy.routers.rez_config.os.access", return_value=False
+                    "os.access", return_value=False
                 ):
                     response = client.get("/api/v1/rez-config/validation")
 
@@ -661,14 +658,14 @@ class TestValidateConfig:
         def mock_exists(path):
             return path == "/valid/path"  # Only main path exists
 
-        with patch("rez_proxy.routers.rez_config.getattr", side_effect=mock_getattr):
-            with patch("rez_proxy.routers.rez_config.config", mock_config):
+        with patch("builtins.getattr", side_effect=mock_getattr):
+            with patch("rez.config.config", mock_config):
                 with patch(
-                    "rez_proxy.routers.rez_config.os.path.exists",
+                    "os.path.exists",
                     side_effect=mock_exists,
                 ):
                     with patch(
-                        "rez_proxy.routers.rez_config.os.access", return_value=True
+                        "os.access", return_value=True
                     ):
                         response = client.get("/api/v1/rez-config/validation")
 
@@ -698,14 +695,14 @@ class TestValidateConfig:
         def mock_access(path, mode):
             return path == "/valid/path"  # Only valid path has access
 
-        with patch("rez_proxy.routers.rez_config.getattr", side_effect=mock_getattr):
-            with patch("rez_proxy.routers.rez_config.config", mock_config):
+        with patch("builtins.getattr", side_effect=mock_getattr):
+            with patch("rez.config.config", mock_config):
                 with patch(
-                    "rez_proxy.routers.rez_config.os.path.exists",
+                    "os.path.exists",
                     side_effect=mock_exists,
                 ):
                     with patch(
-                        "rez_proxy.routers.rez_config.os.access",
+                        "os.access",
                         side_effect=mock_access,
                     ):
                         response = client.get("/api/v1/rez-config/validation")
@@ -725,7 +722,7 @@ class TestValidateConfig:
     def test_validate_config_import_error(self, client):
         """Test config validation with import error."""
         with patch(
-            "rez_proxy.routers.rez_config.config",
+            "rez.config.config",
             side_effect=ImportError("Rez not available"),
         ):
             response = client.get("/api/v1/rez-config/validation")
@@ -736,7 +733,7 @@ class TestValidateConfig:
     def test_validate_config_general_exception(self, client):
         """Test config validation with general exception."""
         with patch(
-            "rez_proxy.routers.rez_config.config",
+            "rez.config.config",
             side_effect=Exception("Unexpected error"),
         ):
             response = client.get("/api/v1/rez-config/validation")
