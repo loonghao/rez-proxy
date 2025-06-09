@@ -2,12 +2,15 @@
 Advanced resolver API endpoints.
 """
 
+import logging
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from rez_proxy.exceptions import handle_rez_exception
+from rez_proxy.core.rez_imports import requires_rez, rez_api
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -23,6 +26,11 @@ class ResolverRequest(BaseModel):
     max_fails: int = -1
     time_limit: int = -1
     verbosity: int = 0
+
+    def model_post_init(self, __context: Any) -> None:
+        """Validate packages list is not empty."""
+        if not self.packages:
+            raise ValueError("Packages list cannot be empty")
 
 
 class ResolverResponse(BaseModel):
@@ -42,61 +50,89 @@ class DependencyGraphRequest(BaseModel):
     packages: list[str]
     depth: int = 3
 
+    def model_post_init(self, __context: Any) -> None:
+        """Validate packages list is not empty."""
+        if not self.packages:
+            raise ValueError("Packages list cannot be empty")
+
 
 @router.post("/resolve/advanced", response_model=ResolverResponse)
+@requires_rez
 async def advanced_resolve(request: ResolverRequest) -> ResolverResponse:
     """Perform advanced package resolution with detailed options."""
     try:
         import time
 
-        from rez.resolved_context import ResolvedContext
-        from rez.resolver import ResolverStatus
-
         start_time = time.time()
 
-        # Create context with advanced options
-        context = ResolvedContext(
-            package_requests=request.packages,
-            timestamp=request.timestamp,
-            max_fails=request.max_fails,
-            time_limit=request.time_limit,
-            verbosity=request.verbosity,
-        )
+        # Create context with advanced options using rez_api
+        try:
+            context = rez_api.create_resolved_context(
+                package_requests=request.packages,
+                timestamp=request.timestamp,
+                max_fails=request.max_fails,
+                time_limit=request.time_limit,
+                verbosity=request.verbosity,
+            )
+        except AttributeError as e:
+            raise HTTPException(
+                status_code=500, detail=f"Rez resolver API not available: {e}"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail=f"Failed to create resolved context: {e}"
+            )
 
         solve_time = time.time() - start_time
 
-        # Extract resolution details
+        # Extract resolution details with error handling
         resolved_packages = []
-        if context.status == ResolverStatus.solved:
-            for package in context.resolved_packages:
-                pkg_info = {
-                    "name": package.name,
-                    "version": str(package.version),
-                    "uri": getattr(package, "uri", None),
-                }
-                resolved_packages.append(pkg_info)
+        try:
+            if hasattr(context, "status") and hasattr(context, "resolved_packages"):
+                # Check if resolution was successful
+                status_name = getattr(context.status, "name", str(context.status))
+                if status_name == "solved" or str(context.status) == "solved":
+                    for package in context.resolved_packages:
+                        pkg_info = {
+                            "name": getattr(package, "name", "unknown"),
+                            "version": str(getattr(package, "version", "unknown")),
+                            "uri": getattr(package, "uri", None),
+                        }
+                        resolved_packages.append(pkg_info)
+        except Exception as e:
+            # Log error but continue with empty resolved_packages
+            logger.debug(f"Failed to extract resolved packages: {e}")
 
         failed_packages = []
         if hasattr(context, "failed_packages"):
-            failed_packages = [str(pkg) for pkg in context.failed_packages]
+            try:
+                failed_packages = [str(pkg) for pkg in context.failed_packages]
+            except Exception as e:
+                logger.debug(f"Failed to extract failed packages: {e}")
+
+        status_name = "unknown"
+        if hasattr(context, "status"):
+            status_name = getattr(context.status, "name", str(context.status))
 
         return ResolverResponse(
-            status=context.status.name,
+            status=status_name,
             resolved_packages=resolved_packages,
             failed_packages=failed_packages,
             solve_time=solve_time,
             num_solves=getattr(context, "num_solves", 0),
             graph_size=len(resolved_packages),
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        handle_rez_exception(e, "advanced_package_resolution")
+        raise HTTPException(status_code=500, detail=f"Advanced resolution failed: {e}")
 
 
 @router.post("/dependency-graph")
+@requires_rez
 async def get_dependency_graph(request: DependencyGraphRequest) -> dict[str, Any]:
     """Get dependency graph for packages."""
     try:
-        from rez.packages import iter_packages
 
         def get_dependencies(
             package_name: str, depth: int, visited: set[str] | None = None
@@ -109,11 +145,20 @@ async def get_dependency_graph(request: DependencyGraphRequest) -> dict[str, Any
 
             visited.add(package_name)
 
-            # Get latest package
-            latest_package = None
-            for package in iter_packages(package_name):
-                latest_package = package
-                break
+            # Get latest package using rez_api
+            try:
+                packages = rez_api.iter_packages(package_name)
+                latest_package = None
+                for package in packages:
+                    latest_package = package
+                    break
+            except AttributeError as e:
+                raise HTTPException(
+                    status_code=500, detail=f"Rez packages API not available: {e}"
+                )
+            except Exception:
+                # Package not found or other error
+                return {}
 
             if not latest_package:
                 return {}
@@ -136,60 +181,106 @@ async def get_dependency_graph(request: DependencyGraphRequest) -> dict[str, Any
             graph[package_name] = get_dependencies(package_name, request.depth)
 
         return {"dependency_graph": graph}
+    except HTTPException:
+        raise
     except Exception as e:
-        handle_rez_exception(e, "dependency_graph_generation")
+        raise HTTPException(
+            status_code=500, detail=f"Dependency graph generation failed: {e}"
+        )
 
 
 @router.get("/conflicts")
-async def detect_conflicts(packages: list[str]) -> dict[str, Any]:
+@requires_rez
+async def detect_conflicts(
+    packages: list[str] = Query(..., min_length=1),
+) -> dict[str, Any]:
     """Detect potential conflicts between packages."""
-    try:
-        from rez.resolved_context import ResolvedContext
-        from rez.resolver import ResolverStatus
 
-        # Try to resolve packages
-        context = ResolvedContext(packages)
+    try:
+        # Try to resolve packages using rez_api
+        try:
+            context = rez_api.create_resolved_context(package_requests=packages)
+        except AttributeError as e:
+            raise HTTPException(
+                status_code=500, detail=f"Rez resolver API not available: {e}"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail=f"Failed to create resolved context: {e}"
+            )
 
         conflicts = []
-        if context.status != ResolverStatus.solved:
-            # Analyze failure reasons
-            failure_desc = getattr(context, "failure_description", "Unknown conflict")
-            conflicts.append(
-                {
-                    "type": "resolution_failure",
-                    "description": failure_desc,
-                    "packages": packages,
-                }
-            )
+        status_name = "unknown"
+
+        if hasattr(context, "status"):
+            status_name = getattr(context.status, "name", str(context.status))
+
+            # Check if resolution failed
+            if status_name != "solved" and str(context.status) != "solved":
+                # Analyze failure reasons
+                failure_desc = getattr(
+                    context, "failure_description", "Unknown conflict"
+                )
+                conflicts.append(
+                    {
+                        "type": "resolution_failure",
+                        "description": failure_desc,
+                        "packages": packages,
+                    }
+                )
 
         return {
             "has_conflicts": len(conflicts) > 0,
             "conflicts": conflicts,
-            "resolution_status": context.status.name,
+            "resolution_status": status_name,
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        handle_rez_exception(e, "conflict_detection")
+        raise HTTPException(status_code=500, detail=f"Conflict detection failed: {e}")
 
 
 @router.post("/validate")
+@requires_rez
 async def validate_package_list(packages: list[str]) -> dict[str, Any]:
     """Validate a list of package requirements."""
-    try:
-        from rez.version import Requirement
+    # Validate packages list is not empty
+    if not packages:
+        raise HTTPException(status_code=422, detail="Packages list cannot be empty")
 
+    try:
         validation_results = []
 
         for package_req in packages:
             try:
-                req = Requirement(package_req)
+                # Use rez_api to create requirement
+                req = rez_api.create_requirement(package_req)
                 validation_results.append(
                     {
                         "requirement": package_req,
                         "valid": True,
-                        "parsed_name": req.name,
-                        "parsed_range": str(req.range) if req.range else None,
+                        "parsed_name": getattr(req, "name", None),
+                        "parsed_range": str(getattr(req, "range", None))
+                        if hasattr(req, "range") and req.range
+                        else None,
                         "error": None,
                     }
+                )
+            except AttributeError as e:
+                # Rez API not available
+                validation_results.append(
+                    {
+                        "requirement": package_req,
+                        "valid": False,
+                        "parsed_name": None,
+                        "parsed_range": None,
+                        "error": f"Rez API not available: {e}",
+                    }
+                )
+            except RuntimeError as e:
+                # System errors should be raised as 500
+                raise HTTPException(
+                    status_code=500, detail=f"Package validation failed: {e}"
                 )
             except Exception as e:
                 validation_results.append(
@@ -209,4 +300,4 @@ async def validate_package_list(packages: list[str]) -> dict[str, Any]:
             "results": validation_results,
         }
     except Exception as e:
-        handle_rez_exception(e, "package_validation")
+        raise HTTPException(status_code=500, detail=f"Package validation failed: {e}")

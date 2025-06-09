@@ -2,6 +2,7 @@
 Pytest configuration and fixtures.
 """
 
+import os
 from unittest.mock import Mock
 
 import pytest
@@ -153,6 +154,48 @@ def mock_build_system():
         "cmake": Mock(__doc__="CMake build system", file_types=["CMakeLists.txt"]),
         "python": Mock(__doc__="Python build system", file_types=["setup.py"]),
     }
+
+
+@pytest.fixture(autouse=True)
+def disable_web_compatibility():
+    """Disable web compatibility checks for all tests."""
+    # Force web compatibility to be disabled in tests
+    original_value = os.environ.get("REZ_PROXY_FORCE_WEB_COMPATIBILITY")
+    os.environ["REZ_PROXY_FORCE_WEB_COMPATIBILITY"] = "true"
+    yield
+    # Restore original value
+    if original_value is None:
+        os.environ.pop("REZ_PROXY_FORCE_WEB_COMPATIBILITY", None)
+    else:
+        os.environ["REZ_PROXY_FORCE_WEB_COMPATIBILITY"] = original_value
+
+
+@pytest.fixture(autouse=True)
+def clean_environment():
+    """Clean environment variables that might interfere with tests."""
+    # Store original values
+    original_values = {}
+
+    # List of environment variables that might cause issues
+    problematic_vars = [
+        "REZ_PROXY_API_PORT",
+        "REZ_PROXY_PORT",
+    ]
+
+    for var in problematic_vars:
+        original_values[var] = os.environ.get(var)
+        # Remove any invalid values
+        if var in os.environ and os.environ[var] == "invalid_port":
+            os.environ.pop(var)
+
+    yield
+
+    # Restore original values
+    for var, value in original_values.items():
+        if value is not None:
+            os.environ[var] = value
+        else:
+            os.environ.pop(var, None)
 
 
 @pytest.fixture(autouse=True)
