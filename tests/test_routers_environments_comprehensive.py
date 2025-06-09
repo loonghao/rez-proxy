@@ -142,7 +142,10 @@ class TestEnvironmentResolve:
         response = client.post("/api/v1/environments/resolve", json=request_data)
 
         # The exception should be handled and return a proper error response
-        assert response.status_code in [500, 422]  # Could be either depending on how exception is handled
+        assert response.status_code in [
+            500,
+            422,
+        ]  # Could be either depending on how exception is handled
         data = response.json()
         assert "detail" in data
 

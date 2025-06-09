@@ -164,6 +164,7 @@ class TestCreateErrorResponse:
 
         # Check response content structure by parsing the body
         import json
+
         response_data = json.loads(response.body.decode())
         assert "error" in response_data
         assert "code" in response_data["error"]

@@ -124,9 +124,7 @@ class TestGetRezConfig:
                     raise AttributeError("Test error")
                 return "valid_value"
 
-            with patch(
-                "builtins.getattr", side_effect=mock_getattr
-            ):
+            with patch("builtins.getattr", side_effect=mock_getattr):
                 with patch("rez.config.config", mock_config):
                     response = client.get("/api/v1/rez-config/")
 
@@ -138,7 +136,7 @@ class TestGetRezConfig:
 
     def test_get_rez_config_import_error(self, client):
         """Test config retrieval with import error."""
-        with patch.dict('sys.modules', {'rez.config': None}):
+        with patch.dict("sys.modules", {"rez.config": None}):
             response = client.get("/api/v1/rez-config/")
 
             assert response.status_code == 500
@@ -444,9 +442,7 @@ class TestGetEnvironmentVariables:
 
     def test_get_environment_variables_exception(self, client):
         """Test environment variables retrieval with exception."""
-        with patch(
-            "os.environ", side_effect=Exception("OS error")
-        ):
+        with patch("os.environ", side_effect=Exception("OS error")):
             response = client.get("/api/v1/rez-config/environment-vars")
 
             assert response.status_code == 500
@@ -577,9 +573,7 @@ class TestValidateConfig:
     def test_validate_config_success_all_valid(self, client, mock_rez_config):
         """Test successful config validation with all valid paths."""
         with patch("rez.config.config", mock_rez_config):
-            with patch(
-                "os.path.exists", return_value=True
-            ):
+            with patch("os.path.exists", return_value=True):
                 with patch("os.access", return_value=True):
                     response = client.get("/api/v1/rez-config/validation")
 
@@ -615,9 +609,7 @@ class TestValidateConfig:
     def test_validate_config_missing_packages_paths(self, client, mock_rez_config):
         """Test config validation with missing packages paths."""
         with patch("rez.config.config", mock_rez_config):
-            with patch(
-                "os.path.exists", return_value=False
-            ):
+            with patch("os.path.exists", return_value=False):
                 response = client.get("/api/v1/rez-config/validation")
 
                 assert response.status_code == 200
@@ -629,12 +621,8 @@ class TestValidateConfig:
     def test_validate_config_no_read_access(self, client, mock_rez_config):
         """Test config validation with no read access to packages paths."""
         with patch("rez.config.config", mock_rez_config):
-            with patch(
-                "os.path.exists", return_value=True
-            ):
-                with patch(
-                    "os.access", return_value=False
-                ):
+            with patch("os.path.exists", return_value=True):
+                with patch("os.access", return_value=False):
                     response = client.get("/api/v1/rez-config/validation")
 
                     assert response.status_code == 200
@@ -664,9 +652,7 @@ class TestValidateConfig:
                     "os.path.exists",
                     side_effect=mock_exists,
                 ):
-                    with patch(
-                        "os.access", return_value=True
-                    ):
+                    with patch("os.access", return_value=True):
                         response = client.get("/api/v1/rez-config/validation")
 
                         assert response.status_code == 200

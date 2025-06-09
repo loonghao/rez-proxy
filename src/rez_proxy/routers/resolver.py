@@ -2,12 +2,15 @@
 Advanced resolver API endpoints.
 """
 
+import logging
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from rez_proxy.core.rez_imports import requires_rez, rez_api
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 

@@ -488,6 +488,7 @@ class TestConfigManagerAdvanced:
                 os.unlink("config/test.json")
             if os.path.exists("config"):
                 import shutil
+
                 shutil.rmtree("config", ignore_errors=True)
 
     def test_config_manager_stop_hot_reload(self):

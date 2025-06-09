@@ -24,8 +24,10 @@ class TestVersionsRouter:
         """Test parsing a version string."""
         version_request = {"version": "1.2.3"}
 
-        with patch("rez_proxy.core.rez_imports.safe_rez_import") as mock_safe_import, \
-             patch("rez_proxy.core.rez_imports.rez_api") as mock_rez_api:
+        with (
+            patch("rez_proxy.core.rez_imports.safe_rez_import") as mock_safe_import,
+            patch("rez_proxy.core.rez_imports.rez_api") as mock_rez_api,
+        ):
             # Mock successful rez import for decorator
             mock_safe_import.return_value = True
             # Mock version object
@@ -44,8 +46,10 @@ class TestVersionsRouter:
         """Test parsing an invalid version string."""
         version_request = {"version": "invalid.version"}
 
-        with patch("rez_proxy.core.rez_imports.safe_rez_import") as mock_safe_import, \
-             patch("rez_proxy.core.rez_imports.rez_api") as mock_rez_api:
+        with (
+            patch("rez_proxy.core.rez_imports.safe_rez_import") as mock_safe_import,
+            patch("rez_proxy.core.rez_imports.rez_api") as mock_rez_api,
+        ):
             # Mock successful rez import for decorator
             mock_safe_import.return_value = True
             # Mock version parsing failure
@@ -116,12 +120,16 @@ class TestVersionsRouter:
         """Test parsing an invalid requirement string."""
         requirement_request = {"requirement": "invalid-requirement"}
 
-        with patch("rez_proxy.core.rez_imports.safe_rez_import") as mock_safe_import, \
-             patch("rez_proxy.core.rez_imports.rez_api") as mock_rez_api:
+        with (
+            patch("rez_proxy.core.rez_imports.safe_rez_import") as mock_safe_import,
+            patch("rez_proxy.core.rez_imports.rez_api") as mock_rez_api,
+        ):
             # Mock successful rez import for decorator
             mock_safe_import.return_value = True
             # Mock requirement parsing failure
-            mock_rez_api.create_requirement.side_effect = Exception("Invalid requirement")
+            mock_rez_api.create_requirement.side_effect = Exception(
+                "Invalid requirement"
+            )
 
             response = client.post(
                 "/api/v1/versions/requirements/parse", json=requirement_request
@@ -157,7 +165,9 @@ class TestVersionsRouter:
         """Test requirement satisfaction check with error."""
         with patch("rez_proxy.core.rez_imports.rez_api") as mock_rez_api:
             # Mock requirement parsing failure
-            mock_rez_api.create_requirement.side_effect = Exception("Invalid requirement")
+            mock_rez_api.create_requirement.side_effect = Exception(
+                "Invalid requirement"
+            )
 
             response = client.post(
                 "/api/v1/versions/requirements/check",
@@ -184,7 +194,9 @@ class TestVersionsRouter:
         """Test getting latest versions with error."""
         with patch("rez_proxy.core.rez_imports.rez_api") as mock_rez_api:
             # Mock package iteration failure
-            mock_rez_api.iter_packages.side_effect = Exception("Package repository error")
+            mock_rez_api.iter_packages.side_effect = Exception(
+                "Package repository error"
+            )
 
             response = client.get("/api/v1/versions/latest?packages=python")
 

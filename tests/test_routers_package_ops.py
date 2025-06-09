@@ -18,6 +18,7 @@ def client():
     app = create_app()
     # Force local mode for testing
     from rez_proxy.core.web_detector import force_web_mode
+
     force_web_mode(enabled=False)
     return TestClient(app)
 
