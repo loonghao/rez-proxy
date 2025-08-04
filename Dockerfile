@@ -1,5 +1,5 @@
 # Multi-stage build for rez-proxy
-FROM python:3.11-slim as builder
+FROM python:3.13-slim as builder
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
@@ -16,7 +16,7 @@ RUN uv sync --frozen --no-dev
 RUN uv build
 
 # Production stage
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
