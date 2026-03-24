@@ -38,6 +38,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Unreleased]: https://github.com/loonghao/rez-proxy/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/loonghao/rez-proxy/releases/tag/v1.0.0
 
+## v1.3.0 (2026-03-24)
+
+### Feat
+
+- comprehensive test coverage improvements and web environment compatibility
+
+### Fix
+
+- resolve lint issues and code formatting
+- resolve core test failures and improve error handling
+- resolve failing unit tests
+
+### Refactor
+
+- improve code quality and fix linting issues
+
 ## v1.2.0 (2025-06-06)
 
 ### Feat
