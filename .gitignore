@@ -40,3 +40,4 @@ dist/
 .ruff_cache/
 coverage.json
 __pycache___
+.shrimp-config.json

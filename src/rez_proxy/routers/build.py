@@ -2,11 +2,17 @@
 Package build and release API endpoints.
 """
 
+import logging
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi_versioning import version
 from pydantic import BaseModel
+
+from rez_proxy.core.rez_imports import requires_rez, rez_api
+from rez_proxy.core.web_compatibility import web_incompatible
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -32,13 +38,21 @@ class ReleaseRequest(BaseModel):
 
 @router.post("/build")
 @version(1)
+@requires_rez
+@web_incompatible(
+    reason="Requires local file system access and build tools",
+    alternatives=[
+        "Use a local rez-proxy instance for package building",
+        "Set up a remote build service with file upload capabilities",
+        "Use CI/CD pipelines for automated package building",
+    ],
+    documentation_url="/docs/web-environment-compatibility",
+    allow_override=True,
+)
 async def build_package(request: BuildRequest) -> dict[str, Any]:
     """Build a package from source."""
     try:
         import os
-
-        from rez.build_process import create_build_process
-        from rez.developer_package import get_developer_package
 
         # Validate source path
         if not os.path.exists(request.source_path):
@@ -46,26 +60,46 @@ async def build_package(request: BuildRequest) -> dict[str, Any]:
                 status_code=404, detail=f"Source path not found: {request.source_path}"
             )
 
-        # Get developer package
-        dev_package = get_developer_package(request.source_path)
+        # Get developer package with proper error handling
+        try:
+            dev_package = rez_api.get_developer_package(request.source_path)
+        except AttributeError as e:
+            raise HTTPException(status_code=500, detail=f"Rez API not available: {e}")
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to get developer package: {e}"
+            )
+
         if not dev_package:
             raise HTTPException(
                 status_code=400, detail="No valid package found at source path"
             )
 
-        # Create build process
-        build_process = create_build_process(
-            package=dev_package,
-            build_args=request.build_args or [],
-            verbose=True,
-        )
+        # Create build process with error handling
+        try:
+            build_process = rez_api.create_build_process(
+                package=dev_package,
+                build_args=request.build_args or [],
+                verbose=True,
+            )
+        except AttributeError as e:
+            raise HTTPException(
+                status_code=500, detail=f"Rez build API not available: {e}"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to create build process: {e}"
+            )
 
-        # Perform build
-        build_result = build_process.build(
-            clean=request.clean,
-            install=request.install,
-            variants=request.variants,
-        )
+        # Perform build with error handling
+        try:
+            build_result = build_process.build(
+                clean=request.clean,
+                install=request.install,
+                variants=request.variants,
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Build failed: {e}")
 
         return {
             "success": True,
@@ -87,13 +121,21 @@ async def build_package(request: BuildRequest) -> dict[str, Any]:
 
 @router.post("/release")
 @version(1)
+@requires_rez
+@web_incompatible(
+    reason="Requires local file system access and package repository write permissions",
+    alternatives=[
+        "Use a local rez-proxy instance for package releases",
+        "Set up a remote release service with proper authentication",
+        "Use automated release pipelines",
+    ],
+    documentation_url="/docs/web-environment-compatibility",
+    allow_override=True,
+)
 async def release_package(request: ReleaseRequest) -> dict[str, Any]:
     """Release a package."""
     try:
         import os
-
-        from rez.developer_package import get_developer_package
-        from rez.release_vcs import create_release_from_path
 
         # Validate source path
         if not os.path.exists(request.source_path):
@@ -101,15 +143,27 @@ async def release_package(request: ReleaseRequest) -> dict[str, Any]:
                 status_code=404, detail=f"Source path not found: {request.source_path}"
             )
 
-        # Get developer package
-        dev_package = get_developer_package(request.source_path)
+        # Get developer package with error handling
+        try:
+            dev_package = rez_api.get_developer_package(request.source_path)
+        except AttributeError as e:
+            raise HTTPException(status_code=500, detail=f"Rez API not available: {e}")
+        except RuntimeError as e:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to get developer package: {e}"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail=f"Failed to get developer package: {e}"
+            )
+
         if not dev_package:
             raise HTTPException(
                 status_code=400, detail="No valid package found at source path"
             )
 
         # Perform release
-        release_result = create_release_from_path(
+        release_result = rez_api.create_release_from_path(
             path=request.source_path,
             message=request.release_message,
             skip_repo_errors=request.skip_repo_errors,
@@ -156,13 +210,20 @@ async def get_build_systems(request: Request) -> dict[str, Any]:
 
 
 @router.get("/status/{source_path:path}")
+@requires_rez
+@web_incompatible(
+    reason="Requires access to local source code paths",
+    alternatives=[
+        "Use package repository APIs to check package status",
+        "Upload source code to a remote build service",
+    ],
+    documentation_url="/docs/web-environment-compatibility",
+    allow_override=True,
+)
 async def get_build_status(source_path: str) -> dict[str, Any]:
     """Get build status for a package source."""
     try:
         import os
-
-        from rez.build_process import get_build_process_types
-        from rez.developer_package import get_developer_package
 
         # Validate source path
         if not os.path.exists(source_path):
@@ -170,25 +231,40 @@ async def get_build_status(source_path: str) -> dict[str, Any]:
                 status_code=404, detail=f"Source path not found: {source_path}"
             )
 
-        # Get developer package
-        dev_package = get_developer_package(source_path)
+        # Get developer package with error handling
+        try:
+            dev_package = rez_api.get_developer_package(source_path)
+        except AttributeError as e:
+            raise HTTPException(status_code=500, detail=f"Rez API not available: {e}")
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to get developer package: {e}"
+            )
+
         if not dev_package:
             raise HTTPException(
                 status_code=400, detail="No valid package found at source path"
             )
 
-        # Check for build files
+        # Check for build files with error handling
         build_files = {}
-        build_types = get_build_process_types()
+        try:
+            build_types = rez_api.get_build_process_types()
 
-        for build_type in build_types:
-            build_class = build_types[build_type]
-            if hasattr(build_class, "file_types"):
-                for file_type in build_class.file_types:
-                    build_file_path = os.path.join(source_path, file_type)
-                    if os.path.exists(build_file_path):
-                        build_files[build_type] = file_type
-                        break
+            for build_type in build_types:
+                build_class = build_types[build_type]
+                if hasattr(build_class, "file_types"):
+                    for file_type in build_class.file_types:
+                        build_file_path = os.path.join(source_path, file_type)
+                        if os.path.exists(build_file_path):
+                            build_files[build_type] = file_type
+                            break
+        except AttributeError:
+            # If build process types are not available, continue with empty build_files
+            pass
+        except Exception as e:
+            # Log error but don't fail the entire request
+            logger.debug(f"Failed to get build process types: {e}")
 
         return {
             "package": dev_package.name,
@@ -205,12 +281,20 @@ async def get_build_status(source_path: str) -> dict[str, Any]:
 
 
 @router.get("/variants/{source_path:path}")
+@requires_rez
+@web_incompatible(
+    reason="Requires access to local source code paths",
+    alternatives=[
+        "Use package repository APIs to get variant information",
+        "Query published packages instead of source code",
+    ],
+    documentation_url="/docs/web-environment-compatibility",
+    allow_override=True,
+)
 async def get_package_variants(source_path: str) -> dict[str, Any]:
     """Get variants information for a package."""
     try:
         import os
-
-        from rez.developer_package import get_developer_package
 
         # Validate source path
         if not os.path.exists(source_path):
@@ -218,8 +302,20 @@ async def get_package_variants(source_path: str) -> dict[str, Any]:
                 status_code=404, detail=f"Source path not found: {source_path}"
             )
 
-        # Get developer package
-        dev_package = get_developer_package(source_path)
+        # Get developer package with error handling
+        try:
+            dev_package = rez_api.get_developer_package(source_path)
+        except AttributeError as e:
+            raise HTTPException(status_code=500, detail=f"Rez API not available: {e}")
+        except RuntimeError as e:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to get developer package: {e}"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail=f"Failed to get developer package: {e}"
+            )
+
         if not dev_package:
             raise HTTPException(
                 status_code=400, detail="No valid package found at source path"
@@ -250,12 +346,20 @@ async def get_package_variants(source_path: str) -> dict[str, Any]:
 
 
 @router.get("/dependencies/{source_path:path}")
+@requires_rez
+@web_incompatible(
+    reason="Requires access to local source code paths",
+    alternatives=[
+        "Use package repository APIs to get dependency information",
+        "Query published packages for dependency details",
+    ],
+    documentation_url="/docs/web-environment-compatibility",
+    allow_override=True,
+)
 async def get_build_dependencies(source_path: str) -> dict[str, Any]:
     """Get build dependencies for a package."""
     try:
         import os
-
-        from rez.developer_package import get_developer_package
 
         # Validate source path
         if not os.path.exists(source_path):
@@ -263,13 +367,22 @@ async def get_build_dependencies(source_path: str) -> dict[str, Any]:
                 status_code=404, detail=f"Source path not found: {source_path}"
             )
 
-        # Get developer package
-        dev_package = get_developer_package(source_path)
+        # Get developer package with error handling
+        try:
+            dev_package = rez_api.get_developer_package(source_path)
+        except AttributeError as e:
+            raise HTTPException(status_code=500, detail=f"Rez API not available: {e}")
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to get developer package: {e}"
+            )
+
         if not dev_package:
             raise HTTPException(
                 status_code=400, detail="No valid package found at source path"
             )
 
+        # Extract dependencies with safe attribute access
         dependencies = {
             "requires": [str(req) for req in getattr(dev_package, "requires", [])],
             "build_requires": [

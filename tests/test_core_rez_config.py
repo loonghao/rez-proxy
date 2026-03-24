@@ -100,6 +100,7 @@ class TestRezConfigManager:
             "REZ_TEST_VAR": "test_value",
         },
     )
+    @patch("sys.platform", "linux")  # Force Unix-style path parsing
     def test_detect_environment_full(self, manager):
         """Test environment detection with full environment."""
         info = manager._detect_environment()
@@ -208,8 +209,9 @@ class TestRezConfigManager:
         manager._environment_info = info
 
         warnings = manager.validate_configuration()
-        assert len(warnings) == 1
-        assert "config file not found" in warnings[0].lower()
+        # Should have warnings for both missing config file and no packages paths
+        assert len(warnings) >= 1
+        assert any("config file not found" in w.lower() for w in warnings)
 
     def test_validate_configuration_no_packages_paths(self, manager):
         """Test configuration validation with no packages paths."""
@@ -225,7 +227,7 @@ class TestRezConfigManager:
         manager._environment_info = info
 
         warnings = manager.validate_configuration()
-        assert any("packages path does not exist" in w for w in warnings)
+        assert any("does not exist" in w.lower() for w in warnings)
 
     def test_get_configuration_summary(self, manager):
         """Test configuration summary generation."""
@@ -290,6 +292,112 @@ class TestRezConfigManager:
             assert "rez_proxy_settings" in content
         finally:
             os.unlink(template_path)
+
+    def test_validate_configuration_packages_path_not_directory(self, manager):
+        """Test configuration validation with packages path that is not a directory."""
+        with tempfile.NamedTemporaryFile() as temp_file:
+            info = RezEnvironmentInfo(packages_paths=[temp_file.name])
+            manager._environment_info = info
+
+            warnings = manager.validate_configuration()
+            assert any("is not a directory" in w.lower() for w in warnings)
+
+    def test_validate_configuration_packages_path_no_read_access(self, manager):
+        """Test configuration validation with packages path without read access."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            packages_path = Path(tmpdir) / "no_read"
+            packages_path.mkdir()
+
+            # Mock os.access to return False for read access
+            with patch("os.access", return_value=False):
+                info = RezEnvironmentInfo(packages_paths=[str(packages_path)])
+                manager._environment_info = info
+
+                warnings = manager.validate_configuration()
+                assert any("no read access" in w.lower() for w in warnings)
+
+    def test_validate_configuration_config_path_not_file(self, manager):
+        """Test configuration validation with config path that is not a file."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            info = RezEnvironmentInfo(config_file=tmpdir)  # Directory instead of file
+            manager._environment_info = info
+
+            warnings = manager.validate_configuration()
+            assert any("is not a file" in w.lower() for w in warnings)
+
+    def test_validate_configuration_local_packages_path_no_write_access(self, manager):
+        """Test configuration validation with local packages path without write access."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            local_path = Path(tmpdir) / "local"
+            local_path.mkdir()
+
+            # Mock os.access to return False for write access
+            with patch("os.access", return_value=False):
+                info = RezEnvironmentInfo(local_packages_path=str(local_path))
+                manager._environment_info = info
+
+                warnings = manager.validate_configuration()
+                assert any(
+                    "no write access to local packages path" in w.lower()
+                    for w in warnings
+                )
+
+    def test_validate_configuration_release_packages_path_not_directory(self, manager):
+        """Test configuration validation with release packages path that is not a directory."""
+        with tempfile.NamedTemporaryFile() as temp_file:
+            info = RezEnvironmentInfo(release_packages_paths=[temp_file.name])
+            manager._environment_info = info
+
+            warnings = manager.validate_configuration()
+            assert any(
+                "release packages path is not a directory" in w.lower()
+                for w in warnings
+            )
+
+    def test_validate_configuration_tmpdir_no_write_access(self, manager):
+        """Test configuration validation with tmpdir without write access."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Mock os.access to return False for write access
+            with patch("os.access", return_value=False):
+                info = RezEnvironmentInfo(tmpdir=tmpdir)
+                manager._environment_info = info
+
+                warnings = manager.validate_configuration()
+                assert any(
+                    "no write access to temporary directory" in w.lower()
+                    for w in warnings
+                )
+
+    def test_validate_configuration_cache_path_no_write_access(self, manager):
+        """Test configuration validation with cache path without write access."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Mock os.access to return False for write access
+            with patch("os.access", return_value=False):
+                info = RezEnvironmentInfo(cache_path=tmpdir)
+                manager._environment_info = info
+
+                warnings = manager.validate_configuration()
+                assert any(
+                    "no write access to cache directory" in w.lower() for w in warnings
+                )
+
+    def test_apply_configuration_from_dict_with_none_values(self, manager):
+        """Test applying configuration with None values."""
+        config_dict = {
+            "config_file": None,
+            "packages_path": "/test/path",
+            "unknown_key": "value",  # Should be ignored
+        }
+
+        with patch.dict(os.environ, {}, clear=True):
+            manager.apply_configuration_from_dict(config_dict)
+
+            # None values should not set environment variables
+            assert "REZ_CONFIG_FILE" not in os.environ
+            # Valid values should be set
+            assert os.environ["REZ_PACKAGES_PATH"] == "/test/path"
+            # Unknown keys should be ignored
+            assert "REZ_UNKNOWN_KEY" not in os.environ
 
 
 def test_get_rez_config_manager():

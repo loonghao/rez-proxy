@@ -280,6 +280,10 @@ class BuildSystemService(PlatformAwareService):
         else:
             return self._get_common_build_systems()
 
+    def get_local_build_systems(self) -> dict[str, Any]:
+        """Get locally available build systems (public method)."""
+        return self._get_local_build_systems()
+
     def _get_local_build_systems(self) -> dict[str, Any]:
         """Get locally available build systems."""
         try:

@@ -15,8 +15,14 @@ from rez_proxy.exceptions import (
     rez_proxy_exception_handler,
 )
 from rez_proxy.middleware.context import ContextMiddleware
+from rez_proxy.middleware.web_compatibility import (
+    WebCompatibilityInfoMiddleware,
+    WebCompatibilityMiddleware,
+    register_web_compatibility_handlers,
+)
 from rez_proxy.routers import (
     build,
+    config_management,
     environments,
     package_ops,
     packages,
@@ -27,6 +33,7 @@ from rez_proxy.routers import (
     suites,
     system,
     versions,
+    web_detection,
 )
 
 
@@ -54,6 +61,10 @@ def create_app() -> VersionedFastAPI:
     # Context middleware for platform awareness
     app.add_middleware(ContextMiddleware)
 
+    # Web compatibility middleware
+    app.add_middleware(WebCompatibilityMiddleware, add_compatibility_headers=True)
+    app.add_middleware(WebCompatibilityInfoMiddleware, include_compatibility_info=True)
+
     # Register routers with versioning decorators
     # V1 API routers
     app.include_router(system.router, prefix="/system", tags=["system"])
@@ -73,6 +84,14 @@ def create_app() -> VersionedFastAPI:
     )
     app.include_router(build.router, prefix="/build", tags=["build"])
     app.include_router(suites.router, prefix="/suites", tags=["suites"])
+    app.include_router(
+        config_management.router,
+        prefix="/config-management",
+        tags=["config-management"],
+    )
+    app.include_router(
+        web_detection.router, prefix="/web-detection", tags=["web-detection"]
+    )
 
     # Create versioned app first
     versioned_app = VersionedFastAPI(
@@ -89,6 +108,9 @@ def create_app() -> VersionedFastAPI:
     versioned_app.add_exception_handler(RezProxyError, rez_proxy_exception_handler)
     versioned_app.add_exception_handler(HTTPException, http_exception_handler)
     versioned_app.add_exception_handler(Exception, general_exception_handler)
+
+    # Register web compatibility exception handlers
+    register_web_compatibility_handlers(versioned_app)
 
     # Add non-versioned endpoints to the versioned app
     # Root path redirect to documentation

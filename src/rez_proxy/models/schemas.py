@@ -3,7 +3,6 @@ Pydantic schemas for API requests and responses.
 """
 
 from enum import Enum
-from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -16,7 +15,7 @@ class PackageInfo(BaseModel):
     description: str | None = Field(None, description="Package description")
     authors: list[str] | None = Field(None, description="Package authors")
     requires: list[str] | None = Field(None, description="Package requirements")
-    variants: list[dict[str, Any]] | None = Field(None, description="Package variants")
+    variants: list[list[str]] | None = Field(None, description="Package variants")
     tools: list[str] | None = Field(None, description="Package tools")
     commands: str | None = Field(None, description="Package commands")
     uri: str | None = Field(None, description="Package URI")
@@ -103,6 +102,7 @@ class ServiceMode(str, Enum):
 
     LOCAL = "local"
     REMOTE = "remote"
+    WEB = "web"
 
 
 class PlatformInfo(BaseModel):

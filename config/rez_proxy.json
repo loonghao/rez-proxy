@@ -1,0 +1,29 @@
+{
+  "host": "updated-host",
+  "port": 8000,
+  "reload": false,
+  "log_level": "debug",
+  "workers": -1,
+  "cors_origins": [
+    "*"
+  ],
+  "rez_config_file": "/path/to/config.py",
+  "rez_packages_path": "/path/to/packages",
+  "rez_local_packages_path": null,
+  "rez_release_packages_path": null,
+  "rez_tmpdir": null,
+  "rez_cache_packages_path": null,
+  "rez_disable_home_config": false,
+  "rez_quiet": false,
+  "rez_debug": false,
+  "enable_cache": true,
+  "cache_ttl": 600,
+  "api_prefix": "/api/v1",
+  "docs_url": "/docs",
+  "redoc_url": "/redoc",
+  "max_concurrent_environments": 10,
+  "max_command_timeout": 300,
+  "enable_hot_reload": false,
+  "config_file_path": "config/rez_proxy.json",
+  "config_watch_interval": 1.0
+}
